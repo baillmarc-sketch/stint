@@ -6,7 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "seed": "tsx supabase/seed/seed.ts",
+    "db:push": "supabase db push",
+    "db:types": "supabase gen types typescript --linked > types/database.types.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.0",
