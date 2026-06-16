@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import type { Metadata } from "next";
 import { format } from "date-fns";
 import { CalendarDays, DollarSign, Inbox, Users } from "lucide-react";
@@ -9,6 +10,7 @@ import { providerEarningsCents } from "@/lib/booking/pricing";
 import { StatusBadge } from "@/components/booking/status-badge";
 import { BookingActions } from "@/components/provider/booking-actions";
 import { Badge } from "@/components/ui/badge";
+import { buttonVariants } from "@/components/ui/button";
 import { EmptyState } from "@/components/shared/empty-state";
 import { formatPrice } from "@/lib/utils";
 
@@ -37,7 +39,7 @@ export default async function DashboardPage() {
   ];
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6 lg:px-8">
+    <div>
       <div className="flex items-center justify-between gap-3">
         <div>
           <h1 className="font-display text-3xl font-extrabold tracking-tight">Provider dashboard</h1>
@@ -53,6 +55,18 @@ export default async function DashboardPage() {
           <Badge variant="brand">Demo view</Badge>
         )}
       </div>
+
+      {provider && !provider.isPublished && (
+        <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-warning/30 bg-warning/10 p-4">
+          <p className="text-sm">
+            Your storefront is a <span className="font-semibold">draft</span> — finish it and publish to start
+            getting booked.
+          </p>
+          <Link href="/dashboard/storefront" className={buttonVariants({ size: "sm", variant: "brand" })}>
+            Edit storefront
+          </Link>
+        </div>
+      )}
 
       <div className="mt-7 grid gap-4 sm:grid-cols-3">
         {stats.map((s) => (
