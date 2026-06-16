@@ -26,7 +26,9 @@ export interface PaymentProvider {
 class SimulatedPaymentProvider implements PaymentProvider {
   readonly name = "simulated";
 
-  async authorize(_amountCents: number, _bookingId: string): Promise<PaymentResult> {
+  // Params omitted (structural typing satisfies the interface); a real provider
+  // would use amountCents + bookingId to create a PaymentIntent.
+  async authorize(): Promise<PaymentResult> {
     return { ref: `sim_${nanoid(18)}`, status: "authorized" };
   }
   async capture(ref: string): Promise<PaymentResult> {

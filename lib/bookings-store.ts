@@ -35,13 +35,32 @@ export async function getStoredBooking(id: string): Promise<StoredBooking | unde
   return (await getStoredBookings()).find((b) => b.id === id);
 }
 
+function writeCookie(bookings: StoredBooking[]) {
+  return cookies().then((c) =>
+    c.set(COOKIE, JSON.stringify(bookings), {
+      httpOnly: true,
+      sameSite: "lax",
+      path: "/",
+      maxAge: THIRTY_DAYS,
+    }),
+  );
+}
+
 export async function addStoredBooking(booking: StoredBooking): Promise<void> {
   const existing = await getStoredBookings();
-  const next = [booking, ...existing].slice(0, MAX_BOOKINGS);
-  (await cookies()).set(COOKIE, JSON.stringify(next), {
-    httpOnly: true,
-    sameSite: "lax",
-    path: "/",
-    maxAge: THIRTY_DAYS,
-  });
+  await writeCookie([booking, ...existing].slice(0, MAX_BOOKINGS));
+}
+
+/** Patch a stored booking (e.g. status/payment transitions). Returns the updated record. */
+export async function updateStoredBooking(
+  id: string,
+  patch: Partial<StoredBooking>,
+): Promise<StoredBooking | null> {
+  const all = await getStoredBookings();
+  const idx = all.findIndex((b) => b.id === id);
+  if (idx < 0) return null;
+  const updated = { ...all[idx], ...patch };
+  all[idx] = updated;
+  await writeCookie(all);
+  return updated;
 }

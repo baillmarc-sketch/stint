@@ -1,4 +1,3 @@
-import Link from "next/link";
 import Image from "next/image";
 import type { Metadata } from "next";
 import { format } from "date-fns";
@@ -6,6 +5,7 @@ import { CalendarDays, DollarSign, Inbox, Users } from "lucide-react";
 import { getStoredBookings } from "@/lib/bookings-store";
 import { providerEarningsCents } from "@/lib/booking/pricing";
 import { StatusBadge } from "@/components/booking/status-badge";
+import { BookingActions } from "@/components/provider/booking-actions";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/shared/empty-state";
 import { formatPrice } from "@/lib/utils";
@@ -65,39 +65,41 @@ export default async function DashboardPage() {
       ) : (
         <ul className="space-y-3">
           {bookings.map((b) => (
-            <li
-              key={b.id}
-              className="flex items-center gap-4 rounded-2xl border border-border bg-card p-4"
-            >
-              <Image
-                src={b.providerAvatarUrl}
-                alt=""
-                width={44}
-                height={44}
-                className="size-11 shrink-0 rounded-full object-cover"
-              />
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <p className="truncate font-semibold">{b.listingTitle}</p>
-                  <StatusBadge status={b.status} />
+            <li key={b.id} className="rounded-2xl border border-border bg-card p-4">
+              <div className="flex items-center gap-4">
+                <Image
+                  src={b.providerAvatarUrl}
+                  alt=""
+                  width={44}
+                  height={44}
+                  className="size-11 shrink-0 rounded-full object-cover"
+                />
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <p className="truncate font-semibold">{b.listingTitle}</p>
+                    <StatusBadge status={b.status} />
+                  </div>
+                  <div className="mt-0.5 flex flex-wrap items-center gap-x-3 text-xs text-muted-foreground">
+                    <span className="inline-flex items-center gap-1">
+                      <CalendarDays className="size-3.5" />
+                      {format(new Date(`${b.eventDate}T00:00:00`), "MMM d")} · {formatTime(b.startTime)}
+                    </span>
+                    <span className="inline-flex items-center gap-1">
+                      <Users className="size-3.5" />
+                      {b.guestCount}
+                    </span>
+                    <span>{b.eventNeighborhood}</span>
+                  </div>
                 </div>
-                <div className="mt-0.5 flex flex-wrap items-center gap-x-3 text-xs text-muted-foreground">
-                  <span className="inline-flex items-center gap-1">
-                    <CalendarDays className="size-3.5" />
-                    {format(new Date(`${b.eventDate}T00:00:00`), "MMM d")} · {formatTime(b.startTime)}
-                  </span>
-                  <span className="inline-flex items-center gap-1">
-                    <Users className="size-3.5" />
-                    {b.guestCount}
-                  </span>
-                  <span>{b.eventNeighborhood}</span>
+                <div className="shrink-0 text-right">
+                  <p className="font-display font-extrabold">
+                    {formatPrice(providerEarningsCents(b.price))}
+                  </p>
+                  <p className="text-xs text-muted-foreground">you earn</p>
                 </div>
               </div>
-              <div className="shrink-0 text-right">
-                <p className="font-display font-extrabold">
-                  {formatPrice(providerEarningsCents(b.price))}
-                </p>
-                <p className="text-xs text-muted-foreground">you earn</p>
+              <div className="mt-3 flex justify-end border-t border-border pt-3">
+                <BookingActions bookingId={b.id} status={b.status} />
               </div>
             </li>
           ))}

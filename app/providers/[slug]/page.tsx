@@ -160,7 +160,7 @@ export default async function ProviderPage({ params }: { params: Promise<Params>
           <Section title={listing.title}>
             <p className="text-muted-foreground">{listing.description}</p>
             <div className="mt-5">
-              <h4 className="mb-3 text-sm font-semibold">What's included</h4>
+              <h4 className="mb-3 text-sm font-semibold">What&apos;s included</h4>
               <ul className="grid gap-2 sm:grid-cols-2">
                 {listing.includes.map((item) => (
                   <li key={item} className="flex items-start gap-2 text-sm">
@@ -309,7 +309,7 @@ export default async function ProviderPage({ params }: { params: Promise<Params>
               )}
             </Link>
             <p className="mt-3 text-center text-xs text-muted-foreground">
-              You won't be charged yet — payments are simulated in this demo.
+              You won&apos;t be charged yet — payments are simulated in this demo.
             </p>
           </div>
         </aside>

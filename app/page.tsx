@@ -14,7 +14,7 @@ import {
 import { HeroSearch } from "@/components/marketplace/hero-search";
 import { CategoryTile } from "@/components/marketplace/category-tile";
 import { ProviderCard } from "@/components/marketplace/provider-card";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   getCategories,

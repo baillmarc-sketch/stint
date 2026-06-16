@@ -401,7 +401,7 @@ export function BookingWizard({ listing, provider }: { listing: Listing; provide
               <PriceBreakdownList price={quote.price} baseLabel={baseLabel} addonLines={quote.addonLines} />
             </div>
             <p className="mt-3 text-center text-xs text-muted-foreground">
-              {pricingLabel(listing)} · You won't be charged (simulated)
+              {pricingLabel(listing)} · You won&apos;t be charged (simulated)
             </p>
           </div>
         </div>

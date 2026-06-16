@@ -12,9 +12,12 @@ import {
   Users,
 } from "lucide-react";
 import { getStoredBooking } from "@/lib/bookings-store";
+import { getThread } from "@/lib/messages-store";
 import { getListing } from "@/lib/queries";
 import { StatusBadge } from "@/components/booking/status-badge";
 import { PriceBreakdownList } from "@/components/booking/price-breakdown";
+import { MessageThread } from "@/components/booking/message-thread";
+import { CancelBookingButton } from "@/components/booking/cancel-button";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -36,6 +39,7 @@ export default async function BookingDetailPage({
   const isNew = sp.new === "1";
   const found = await getListing(booking.listingId);
   const listing = found?.listing;
+  const thread = await getThread(booking.id);
 
   const pkg = booking.packageId
     ? listing?.packages.find((p) => p.id === booking.packageId)
@@ -123,13 +127,20 @@ export default async function BookingDetailPage({
         </div>
       </div>
 
+      <div id="messages" className="mt-6">
+        <h2 className="mb-3 font-display text-lg font-extrabold tracking-tight">Messages</h2>
+        <MessageThread
+          bookingId={booking.id}
+          providerName={booking.providerName}
+          providerAvatarUrl={booking.providerAvatarUrl}
+          initialMessages={thread}
+        />
+      </div>
+
       <div className="mt-6 flex flex-wrap gap-3">
-        <Link
-          href={`/providers/${booking.providerSlug}`}
-          className={cn(buttonVariants({ variant: "outline" }))}
-        >
+        <Link href={`/providers/${booking.providerSlug}`} className={cn(buttonVariants({ variant: "outline" }))}>
           <MessageCircle className="size-4" />
-          Message provider
+          View profile
         </Link>
         <Link href="/bookings" className={cn(buttonVariants({ variant: "outline" }))}>
           All bookings
@@ -138,6 +149,7 @@ export default async function BookingDetailPage({
           <PartyPopper className="size-4" />
           Book something else
         </Link>
+        <CancelBookingButton bookingId={booking.id} status={booking.status} />
       </div>
     </div>
   );
