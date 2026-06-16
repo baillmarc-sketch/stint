@@ -6,6 +6,8 @@ import { computeQuote } from "@/lib/booking/pricing";
 import { initialStatus } from "@/lib/booking/state-machine";
 import { getPaymentProvider } from "@/lib/payments";
 import { addStoredBooking, type StoredBooking } from "@/lib/bookings-store";
+import { isSupabaseConfigured } from "@/lib/supabase/config";
+import { getOptionalUser } from "@/lib/auth";
 
 export async function POST(request: Request) {
   let body: unknown;
@@ -13,6 +15,12 @@ export async function POST(request: Request) {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
+
+  // With a live database, bookings are tied to the signed-in customer (RLS).
+  // The zero-config demo books anonymously into a cookie.
+  if (isSupabaseConfigured() && !(await getOptionalUser())) {
+    return NextResponse.json({ error: "Please sign in to book." }, { status: 401 });
   }
 
   const parsed = createBookingSchema.safeParse(body);
@@ -76,7 +84,7 @@ export async function POST(request: Request) {
     createdAt: new Date().toISOString(),
   };
 
-  await addStoredBooking(booking);
+  const stored = await addStoredBooking(booking);
 
-  return NextResponse.json({ bookingId: booking.id, status });
+  return NextResponse.json({ bookingId: stored.id, status });
 }

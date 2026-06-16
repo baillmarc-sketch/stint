@@ -2,7 +2,9 @@ import Image from "next/image";
 import type { Metadata } from "next";
 import { format } from "date-fns";
 import { CalendarDays, DollarSign, Inbox, Users } from "lucide-react";
-import { getStoredBookings } from "@/lib/bookings-store";
+import { getProviderBookings, getStoredBookings } from "@/lib/bookings-store";
+import { getProviderContext } from "@/lib/auth";
+import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { providerEarningsCents } from "@/lib/booking/pricing";
 import { StatusBadge } from "@/components/booking/status-badge";
 import { BookingActions } from "@/components/provider/booking-actions";
@@ -13,7 +15,14 @@ import { formatPrice } from "@/lib/utils";
 export const metadata: Metadata = { title: "Provider dashboard" };
 
 export default async function DashboardPage() {
-  const bookings = await getStoredBookings();
+  // With a live database, show the signed-in owner's storefront bookings; in the
+  // demo, fall back to the cookie-backed bookings so the flow stays clickable.
+  const provider = await getProviderContext();
+  const bookings = provider
+    ? await getProviderBookings(provider.id)
+    : isSupabaseConfigured()
+      ? []
+      : await getStoredBookings();
 
   const pending = bookings.filter((b) => b.status === "requested" || b.status === "quoted").length;
   const confirmed = bookings.filter((b) => b.status === "confirmed").length;
@@ -36,7 +45,13 @@ export default async function DashboardPage() {
             Your bookings, availability, and payouts in one place.
           </p>
         </div>
-        <Badge variant="brand">Demo view</Badge>
+        {provider ? (
+          <Badge variant={provider.isPublished ? "success" : "warning"}>
+            {provider.isPublished ? "Published" : "Draft"}
+          </Badge>
+        ) : (
+          <Badge variant="brand">Demo view</Badge>
+        )}
       </div>
 
       <div className="mt-7 grid gap-4 sm:grid-cols-3">

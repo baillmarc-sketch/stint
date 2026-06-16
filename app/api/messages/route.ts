@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getStoredBooking } from "@/lib/bookings-store";
-import { appendMessages } from "@/lib/messages-store";
+import { appendMessages, type MessageSender } from "@/lib/messages-store";
+import { isSupabaseConfigured } from "@/lib/supabase/config";
 
 const bodySchema = z.object({
   bookingId: z.string().min(1),
@@ -24,11 +25,16 @@ export async function POST(request: Request) {
   const booking = await getStoredBooking(parsed.data.bookingId);
   if (!booking) return NextResponse.json({ error: "Booking not found" }, { status: 404 });
 
-  const reply = REPLIES[Math.floor(Math.random() * REPLIES.length)];
-  const messages = await appendMessages(parsed.data.bookingId, [
+  // Live mode: persist just the participant's real message (no fabricated reply —
+  // the provider answers for themselves). Demo mode: add a canned reply so the
+  // thread feels alive without a real counterparty.
+  const outgoing: Array<{ sender: MessageSender; body: string }> = [
     { sender: "customer", body: parsed.data.body },
-    { sender: "provider", body: reply },
-  ]);
+  ];
+  if (!isSupabaseConfigured()) {
+    outgoing.push({ sender: "provider", body: REPLIES[Math.floor(Math.random() * REPLIES.length)] });
+  }
 
+  const messages = await appendMessages(parsed.data.bookingId, outgoing);
   return NextResponse.json({ messages });
 }
