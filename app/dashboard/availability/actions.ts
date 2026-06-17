@@ -59,3 +59,48 @@ export async function saveAvailability(_prev: SaveState, formData: FormData): Pr
   revalidatePath(`/providers/${provider.slug}`);
   return { ok: true };
 }
+
+const TIME = /^\d{2}:\d{2}$/;
+const DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+/** Add one bookable slot (specific date + time window). */
+export async function addAvailabilitySlot(formData: FormData): Promise<void> {
+  const provider = await getProviderContext();
+  if (!provider) return;
+
+  const date = String(formData.get("date") ?? "");
+  const startTime = String(formData.get("startTime") ?? "");
+  const endTime = String(formData.get("endTime") ?? "");
+  if (!DATE.test(date) || !TIME.test(startTime) || !TIME.test(endTime) || endTime <= startTime) return;
+
+  const db = await createSupabaseServerClient();
+  await db.from("availability_slots").insert({
+    provider_id: provider.id,
+    slot_date: date,
+    start_time: startTime,
+    end_time: endTime,
+  });
+
+  revalidatePath("/dashboard/availability");
+  revalidatePath(`/providers/${provider.slug}`);
+}
+
+/** Remove a slot the owner created (only if it isn't already booked). */
+export async function deleteAvailabilitySlot(formData: FormData): Promise<void> {
+  const provider = await getProviderContext();
+  if (!provider) return;
+
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+
+  const db = await createSupabaseServerClient();
+  await db
+    .from("availability_slots")
+    .delete()
+    .eq("id", id)
+    .eq("provider_id", provider.id)
+    .eq("is_booked", false);
+
+  revalidatePath("/dashboard/availability");
+  revalidatePath(`/providers/${provider.slug}`);
+}

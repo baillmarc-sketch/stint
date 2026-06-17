@@ -99,6 +99,16 @@ export interface AvailabilityRuleRow {
   end_time: string;
 }
 
+export interface AvailabilitySlotRow {
+  id: string;
+  provider_id: string;
+  slot_date: string;
+  start_time: string;
+  end_time: string;
+  is_booked: boolean;
+  booking_id: string | null;
+}
+
 export interface ProviderRow {
   id: string;
   owner_id: string | null;
@@ -124,6 +134,7 @@ export interface ProviderRow {
   listings?: ListingRow[];
   reviews?: ReviewRow[];
   availability_rules?: AvailabilityRuleRow[];
+  availability_slots?: AvailabilitySlotRow[];
 }
 
 export interface BookingAddonRow {

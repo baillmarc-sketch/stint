@@ -1,4 +1,4 @@
-import type { Addon, AvailabilityRule, Listing, Package, Provider } from "@/types/domain";
+import type { Addon, AvailabilityRule, AvailabilitySlot, Listing, Package, Provider } from "@/types/domain";
 import { slugify } from "@/lib/utils";
 import { coverImage, galleryImages, portrait } from "./images";
 import { buildReviews } from "./reviews";
@@ -62,6 +62,27 @@ const WEEKDAYS_TOO: AvailabilityRule[] = [
   { weekday: 3, startTime: "10:00", endTime: "20:00" },
   ...EVENING,
 ];
+
+/** Generate a few upcoming bookable slots from the weekly rules, for the demo. */
+function genSlots(slug: string, availability: AvailabilityRule[]): AvailabilitySlot[] {
+  const out: AvailabilitySlot[] = [];
+  const today = new Date();
+  for (let d = 1; d <= 24 && out.length < 8; d++) {
+    const date = new Date(today);
+    date.setDate(today.getDate() + d);
+    const rule = availability.find((r) => r.weekday === date.getDay());
+    if (!rule) continue;
+    const dateStr = date.toISOString().slice(0, 10);
+    out.push({
+      id: `${slug}-slot-${dateStr}`,
+      date: dateStr,
+      startTime: rule.startTime,
+      endTime: rule.endTime,
+      isBooked: false,
+    });
+  }
+  return out;
+}
 
 function defineProvider(spec: ProviderSpec, availability: AvailabilityRule[]): Provider {
   const slug = slugify(spec.business);
@@ -131,6 +152,7 @@ function defineProvider(spec: ProviderSpec, availability: AvailabilityRule[]): P
     isPublished: true,
     credentials: spec.credentials,
     availability,
+    slots: genSlots(slug, availability),
     listings: [listing],
     reviews: buildReviews(slug, reviewCount, spec.rating),
   };

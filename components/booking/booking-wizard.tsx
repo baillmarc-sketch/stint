@@ -16,7 +16,7 @@ import {
   Users,
   Zap,
 } from "lucide-react";
-import type { Listing, Provider } from "@/types/domain";
+import type { AvailabilitySlot, Listing, Provider } from "@/types/domain";
 import { computeQuote, type AddonSelection } from "@stint/core/booking/pricing";
 import { NYC_NEIGHBORHOODS } from "@/lib/constants";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -64,6 +64,7 @@ export function BookingWizard({
   );
   const [eventDate, setEventDate] = useState("");
   const [startTime, setStartTime] = useState("18:00");
+  const [slotId, setSlotId] = useState<string | null>(null);
   const [durationHours, setDurationHours] = useState(listing.minHours ?? 3);
   const [guestCount, setGuestCount] = useState(
     Math.min(Math.max(listing.minGuests, 12), listing.maxGuests),
@@ -101,6 +102,19 @@ export function BookingWizard({
     return listing.title;
   }, [quote.selectedPackage, isHourly, listing.title, durationHours]);
 
+  const today = new Date().toISOString().slice(0, 10);
+  const openSlots = useMemo(
+    () => (provider.slots ?? []).filter((s) => !s.isBooked && s.date >= today).slice(0, 12),
+    [provider.slots, today],
+  );
+  const hasSlots = openSlots.length > 0;
+
+  function selectSlot(s: AvailabilitySlot) {
+    setSlotId(s.id);
+    setEventDate(s.date);
+    setStartTime(s.startTime);
+  }
+
   const canContinue =
     step === 0 ? Boolean(eventDate) : step === REVIEW_STEP ? eventAddress.length >= 3 : true;
 
@@ -110,6 +124,7 @@ export function BookingWizard({
     addonSelections,
     eventDate,
     startTime,
+    slotId,
     durationHours,
     guestCount,
     eventAddress,
@@ -241,25 +256,52 @@ export function BookingWizard({
               </Field>
             )}
 
-            <div className="grid gap-5 sm:grid-cols-2">
-              <Field label="Event date">
-                <input
-                  type="date"
-                  value={eventDate}
-                  min={new Date().toISOString().slice(0, 10)}
-                  onChange={(e) => setEventDate(e.target.value)}
-                  className={inputClass}
-                />
-              </Field>
-              <Field label="Start time">
-                <select value={startTime} onChange={(e) => setStartTime(e.target.value)} className={inputClass}>
-                  {TIME_OPTIONS.map((t) => (
-                    <option key={t} value={t}>
-                      {formatTime(t)}
-                    </option>
+            {hasSlots && (
+              <Field label="Choose an available time" hint="instant book">
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {openSlots.map((s) => (
+                    <button
+                      key={s.id}
+                      type="button"
+                      onClick={() => selectSlot(s)}
+                      className={cn(
+                        "rounded-xl border px-3.5 py-2.5 text-left text-sm transition-colors",
+                        slotId === s.id
+                          ? "border-primary bg-primary/5 ring-1 ring-primary"
+                          : "border-border hover:border-primary/40",
+                      )}
+                    >
+                      <span className="font-medium">{formatDate(s.date)}</span>
+                      <span className="text-muted-foreground"> · {formatTime(s.startTime)}</span>
+                    </button>
                   ))}
-                </select>
+                </div>
               </Field>
+            )}
+
+            <div className="grid gap-5 sm:grid-cols-2">
+              {!hasSlots && (
+                <>
+                  <Field label="Event date">
+                    <input
+                      type="date"
+                      value={eventDate}
+                      min={new Date().toISOString().slice(0, 10)}
+                      onChange={(e) => setEventDate(e.target.value)}
+                      className={inputClass}
+                    />
+                  </Field>
+                  <Field label="Start time">
+                    <select value={startTime} onChange={(e) => setStartTime(e.target.value)} className={inputClass}>
+                      {TIME_OPTIONS.map((t) => (
+                        <option key={t} value={t}>
+                          {formatTime(t)}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                </>
+              )}
 
               {isHourly && (
                 <Field label="Duration">

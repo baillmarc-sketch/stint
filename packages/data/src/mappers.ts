@@ -6,6 +6,7 @@
 import type {
   Addon,
   AvailabilityRule,
+  AvailabilitySlot,
   Category,
   Listing,
   Media,
@@ -16,6 +17,7 @@ import type {
 import type {
   AddonRow,
   AvailabilityRuleRow,
+  AvailabilitySlotRow,
   CategoryRow,
   ListingRow,
   MediaRow,
@@ -65,6 +67,16 @@ export function toAddon(r: AddonRow): Addon {
 
 export function toAvailabilityRule(r: AvailabilityRuleRow): AvailabilityRule {
   return { weekday: r.weekday, startTime: r.start_time, endTime: r.end_time };
+}
+
+export function toAvailabilitySlot(r: AvailabilitySlotRow): AvailabilitySlot {
+  return {
+    id: r.id,
+    date: r.slot_date,
+    startTime: r.start_time.slice(0, 5),
+    endTime: r.end_time.slice(0, 5),
+    isBooked: r.is_booked,
+  };
 }
 
 export function toReview(r: ReviewRow): Review {
@@ -130,6 +142,7 @@ export function toProvider(r: ProviderRow): Provider {
     isPublished: r.is_published,
     credentials: r.credentials ?? [],
     availability: (r.availability_rules ?? []).map(toAvailabilityRule),
+    slots: (r.availability_slots ?? []).map(toAvailabilitySlot),
     listings: (r.listings ?? []).map(toListing),
     reviews,
   };

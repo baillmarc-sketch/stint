@@ -18,6 +18,8 @@ export const createBookingSchema = z.object({
   notes: z.string().max(1000).default(""),
   /** Set in Stripe mode — the client-confirmed PaymentIntent to attach. */
   paymentIntentId: z.string().optional(),
+  /** Bookable availability slot being reserved (auto-book). */
+  slotId: z.string().optional(),
 });
 
 export type CreateBookingInput = z.infer<typeof createBookingSchema>;

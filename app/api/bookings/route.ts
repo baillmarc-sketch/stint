@@ -7,6 +7,7 @@ import { initialStatus } from "@stint/core/booking/state-machine";
 import { getPaymentProvider, retrievePaymentIntent } from "@/lib/payments";
 import { addStoredBooking, type StoredBooking } from "@/lib/bookings-store";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { isStripeEnabled } from "@/lib/stripe";
 import { getOptionalUser } from "@/lib/auth";
 
@@ -38,6 +39,20 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Listing not found" }, { status: 404 });
   }
   const { listing, provider } = found;
+
+  // Auto-book: ensure the chosen slot is still open (DB mode only; the admin
+  // client bypasses the owner-only RLS write on slots).
+  if (input.slotId && isSupabaseConfigured()) {
+    const admin = createSupabaseAdminClient();
+    const { data: slot } = await admin
+      .from("availability_slots")
+      .select("id, is_booked, provider_id")
+      .eq("id", input.slotId)
+      .maybeSingle();
+    if (!slot || slot.is_booked || slot.provider_id !== provider.id) {
+      return NextResponse.json({ error: "That time is no longer available." }, { status: 409 });
+    }
+  }
 
   // Re-run pricing server-side so a tampered client payload can't change the total.
   const { price, addonLines } = computeQuote({
@@ -109,6 +124,15 @@ export async function POST(request: Request) {
   };
 
   const stored = await addStoredBooking(booking);
+
+  // Reserve the slot so it can't be double-booked (auto-book).
+  if (input.slotId && isSupabaseConfigured()) {
+    await createSupabaseAdminClient()
+      .from("availability_slots")
+      .update({ is_booked: true })
+      .eq("id", input.slotId)
+      .eq("is_booked", false);
+  }
 
   return NextResponse.json({ bookingId: stored.id, status });
 }

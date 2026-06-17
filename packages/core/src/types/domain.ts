@@ -116,6 +116,16 @@ export interface AvailabilityRule {
   endTime: string;
 }
 
+/** A specific, bookable date + time window. Booking one reserves it (auto-book). */
+export interface AvailabilitySlot {
+  id: string;
+  /** YYYY-MM-DD */
+  date: string;
+  startTime: string;
+  endTime: string;
+  isBooked: boolean;
+}
+
 export interface Provider {
   id: string;
   slug: string;
@@ -140,6 +150,8 @@ export interface Provider {
   /** Free-form credential/insurance badges shown on the profile. */
   credentials: string[];
   availability: AvailabilityRule[];
+  /** Discrete bookable slots (specific dates + times). */
+  slots?: AvailabilitySlot[];
   listings: Listing[];
   reviews: Review[];
 }

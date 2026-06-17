@@ -15,7 +15,7 @@ import { matchesFilters, score, sortResults, type ListingResult, type SearchFilt
 
 // Nested selects used across queries.
 const LISTING_EMBED = "*, packages(*), addons(*), media(*)";
-const PROVIDER_FULL = `*, listings(${LISTING_EMBED}), reviews(*), availability_rules(*)`;
+const PROVIDER_FULL = `*, listings(${LISTING_EMBED}), reviews(*), availability_rules(*), availability_slots(*)`;
 
 function fail(label: string, error: { message: string } | null): void {
   if (error) throw new Error(`[queries] ${label}: ${error.message}`);
@@ -55,7 +55,7 @@ export async function getListing(listingId: string): Promise<ListingResult | und
   const db = await createSupabaseServerClient();
   const { data } = await db
     .from("listings")
-    .select(`${LISTING_EMBED}, providers!inner(*)`)
+    .select(`${LISTING_EMBED}, providers!inner(*, availability_slots(*))`)
     .eq("id", listingId)
     .eq("is_published", true)
     .maybeSingle();
@@ -93,7 +93,7 @@ export async function searchListings(filters: SearchFilters): Promise<ListingRes
 
   const { data, error } = await db
     .from("listings")
-    .select(`${LISTING_EMBED}, providers!inner(*)`)
+    .select(`${LISTING_EMBED}, providers!inner(*, availability_slots(*))`)
     .eq("is_published", true);
   fail("searchListings", error);
 
