@@ -1,15 +1,38 @@
 import { useLocalSearchParams } from "expo-router";
-import { ScrollView, StyleSheet, Text, View, useColorScheme } from "react-native";
+import { useEffect, useState } from "react";
+import { ActivityIndicator, ScrollView, StyleSheet, Text, View, useColorScheme } from "react-native";
 import { Image } from "expo-image";
-import { formatPrice } from "@stint/core";
+import { formatPrice, type Provider } from "@stint/core";
 import { Colors } from "@/constants/theme";
-import { sampleProviders } from "@/lib/sample-data";
+import { loadProvider } from "@/lib/data";
 
 export default function ProviderDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const scheme = useColorScheme() === "dark" ? "dark" : "light";
   const c = Colors[scheme];
-  const provider = sampleProviders.find((p) => p.id === id || p.slug === id);
+  const [provider, setProvider] = useState<Provider | undefined>(undefined);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    loadProvider(id).then((p) => {
+      if (active) {
+        setProvider(p);
+        setLoading(false);
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, [id]);
+
+  if (loading) {
+    return (
+      <View style={[styles.center, { backgroundColor: c.background }]}>
+        <ActivityIndicator color={c.text} />
+      </View>
+    );
+  }
 
   if (!provider) {
     return (
@@ -33,12 +56,16 @@ export default function ProviderDetail() {
         <Text style={[styles.tagline, { color: c.text }]}>{provider.tagline}</Text>
         <Text style={[styles.body, { color: c.textSecondary }]}>{provider.bio}</Text>
 
-        <Text style={[styles.section, { color: c.text }]}>{listing.title}</Text>
-        {listing.includes.map((inc) => (
-          <Text key={inc} style={[styles.bullet, { color: c.textSecondary }]}>
-            • {inc}
-          </Text>
-        ))}
+        {listing ? (
+          <>
+            <Text style={[styles.section, { color: c.text }]}>{listing.title}</Text>
+            {listing.includes.map((inc) => (
+              <Text key={inc} style={[styles.bullet, { color: c.textSecondary }]}>
+                • {inc}
+              </Text>
+            ))}
+          </>
+        ) : null}
 
         {provider.credentials.length > 0 && (
           <View style={styles.badges}>
@@ -50,15 +77,15 @@ export default function ProviderDetail() {
           </View>
         )}
 
-        <View style={[styles.priceBar, { backgroundColor: c.backgroundElement }]}>
-          <View>
+        {listing ? (
+          <View style={[styles.priceBar, { backgroundColor: c.backgroundElement }]}>
             <Text style={[styles.priceLabel, { color: c.textSecondary }]}>Starting at</Text>
             <Text style={[styles.price, { color: c.text }]}>
               {formatPrice(listing.basePriceCents)}{" "}
               <Text style={[styles.unit, { color: c.textSecondary }]}>{listing.unitLabel}</Text>
             </Text>
           </View>
-        </View>
+        ) : null}
         <Text style={[styles.note, { color: c.textSecondary }]}>
           In-app booking is coming soon — powered by the same @stint/core pricing as the web app.
         </Text>

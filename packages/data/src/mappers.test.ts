@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { toCategory, toListing, toProvider } from "@/lib/queries/mappers";
-import type { ListingRow, ProviderRow } from "@/lib/queries/db-types";
+import { toCategory, toListing, toProvider } from "./mappers";
+import type { ListingRow, ProviderRow } from "./db-types";
 
 describe("row → domain mappers", () => {
   it("maps a category row to camelCase", () => {

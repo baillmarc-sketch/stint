@@ -1,7 +1,7 @@
 /**
  * Pure row → domain mappers. Snake_case Postgres rows in, camelCase view models
- * (types/domain.ts) out. Kept side-effect-free so they're unit-testable and shared
- * by the query layer and the route handlers.
+ * (@stint/core) out. Side-effect-free so they're unit-testable and shared by the
+ * web query layer, the native app, and the route handlers.
  */
 import type {
   Addon,
@@ -12,7 +12,7 @@ import type {
   Package,
   Provider,
   Review,
-} from "@/types/domain";
+} from "@stint/core";
 import type {
   AddonRow,
   AvailabilityRuleRow,

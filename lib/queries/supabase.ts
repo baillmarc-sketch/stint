@@ -9,8 +9,8 @@
 import "server-only";
 import type { Category, Provider } from "@/types/domain";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { toCategory, toListing, toProvider } from "./mappers";
-import type { CategoryRow, ListingRow, ProviderRow } from "./db-types";
+import { toCategory, toListing, toProvider } from "@stint/data/mappers";
+import type { CategoryRow, ListingRow, ProviderRow } from "@stint/data/db-types";
 import { matchesFilters, score, sortResults, type ListingResult, type SearchFilters } from "./types";
 
 // Nested selects used across queries.

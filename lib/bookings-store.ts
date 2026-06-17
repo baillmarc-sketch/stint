@@ -4,7 +4,7 @@ import type { Booking } from "@/types/domain";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import type { BookingRow } from "@/lib/queries/db-types";
+import type { BookingRow } from "@stint/data/db-types";
 
 /**
  * Booking persistence.

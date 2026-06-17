@@ -10,7 +10,9 @@
         "./assets/*"
       ],
       "@stint/core": ["../../packages/core/src/index.ts"],
-      "@stint/core/*": ["../../packages/core/src/*"]
+      "@stint/core/*": ["../../packages/core/src/*"],
+      "@stint/data": ["../../packages/data/src/index.ts"],
+      "@stint/data/*": ["../../packages/data/src/*"]
     }
   },
   "include": [

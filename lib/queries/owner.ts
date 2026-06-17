@@ -1,8 +1,8 @@
 import "server-only";
 import type { Listing, Provider } from "@/types/domain";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { toProvider } from "./mappers";
-import type { ProviderRow } from "./db-types";
+import { toProvider } from "@stint/data/mappers";
+import type { ProviderRow } from "@stint/data/db-types";
 
 /**
  * Owner-scoped reads for the provider dashboard. Unlike the public queries these

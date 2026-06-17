@@ -1,12 +1,10 @@
 /**
  * Hand-written row shapes for the Supabase tables we read/write, mirroring
- * `supabase/migrations/0001_init.sql` (snake_case columns).
- *
- * These let the Supabase backend compile and stay type-checked without a linked
- * project. Once the user links a project they can run `pnpm db:types` to generate
- * the full `types/database.types.ts`; these local shapes can then be narrowed to it.
+ * `supabase/migrations/0001_init.sql` (snake_case columns). Shared by the web and
+ * native query layers. Once a project is linked, `pnpm db:types` can generate the
+ * full `database.types.ts` and these can be narrowed to it.
  */
-import type { MediaKind, PricingModel, BookingStatus, PaymentStatus } from "@/types/domain";
+import type { MediaKind, PricingModel, BookingStatus, PaymentStatus } from "@stint/core";
 
 export interface CategoryRow {
   id: string;

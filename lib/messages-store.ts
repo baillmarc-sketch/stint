@@ -4,7 +4,7 @@ import { nanoid } from "nanoid";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import type { MessageRow, MessageThreadRow } from "@/lib/queries/db-types";
+import type { MessageRow, MessageThreadRow } from "@stint/data/db-types";
 
 /**
  * Per-booking message threads.

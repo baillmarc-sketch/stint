@@ -1,18 +1,50 @@
 import { Link } from "expo-router";
-import { FlatList, Pressable, StyleSheet, Text, View, useColorScheme } from "react-native";
+import { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+  useColorScheme,
+} from "react-native";
 import { Image } from "expo-image";
 import { formatPrice, type Provider } from "@stint/core";
 import { Colors } from "@/constants/theme";
-import { sampleProviders } from "@/lib/sample-data";
+import { loadProviders } from "@/lib/data";
 
 export default function Browse() {
   const scheme = useColorScheme() === "dark" ? "dark" : "light";
   const c = Colors[scheme];
+  const [providers, setProviders] = useState<Provider[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    loadProviders().then((p) => {
+      if (active) {
+        setProviders(p);
+        setLoading(false);
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  if (loading) {
+    return (
+      <View style={[styles.center, { backgroundColor: c.background }]}>
+        <ActivityIndicator color={c.text} />
+      </View>
+    );
+  }
 
   return (
     <View style={[styles.screen, { backgroundColor: c.background }]}>
       <FlatList
-        data={sampleProviders}
+        data={providers}
         keyExtractor={(p) => p.id}
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
@@ -51,7 +83,9 @@ function ProviderCard({ provider, c }: { provider: Provider; c: (typeof Colors)[
               {provider.neighborhood}
               {provider.instantBook ? " · Instant book" : ""}
             </Text>
-            <Text style={[styles.price, { color: c.text }]}>from {formatPrice(listing.basePriceCents)}</Text>
+            {listing ? (
+              <Text style={[styles.price, { color: c.text }]}>from {formatPrice(listing.basePriceCents)}</Text>
+            ) : null}
           </View>
         </View>
       </Pressable>
@@ -61,6 +95,7 @@ function ProviderCard({ provider, c }: { provider: Provider; c: (typeof Colors)[
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
+  center: { flex: 1, alignItems: "center", justifyContent: "center" },
   list: { padding: 16, gap: 14 },
   header: { marginBottom: 6, gap: 6 },
   h1: { fontSize: 28, fontWeight: "800", lineHeight: 32 },
