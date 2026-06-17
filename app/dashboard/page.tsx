@@ -6,7 +6,7 @@ import { CalendarDays, DollarSign, Inbox, Users } from "lucide-react";
 import { getProviderBookings, getStoredBookings } from "@/lib/bookings-store";
 import { getProviderContext } from "@/lib/auth";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
-import { providerEarningsCents } from "@/lib/booking/pricing";
+import { providerEarningsCents } from "@stint/core/booking/pricing";
 import { StatusBadge } from "@/components/booking/status-badge";
 import { BookingActions } from "@/components/provider/booking-actions";
 import { Badge } from "@/components/ui/badge";

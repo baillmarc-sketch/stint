@@ -3,7 +3,7 @@ import { CheckCircle2, Clock, CreditCard } from "lucide-react";
 import { getProviderContext } from "@/lib/auth";
 import { getProviderStripe } from "@/lib/queries/owner";
 import { getProviderBookings } from "@/lib/bookings-store";
-import { providerEarningsCents } from "@/lib/booking/pricing";
+import { providerEarningsCents } from "@stint/core/booking/pricing";
 import { getStripe, isStripeEnabled } from "@/lib/stripe";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { EmptyState } from "@/components/shared/empty-state";

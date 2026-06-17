@@ -5,8 +5,8 @@
  * and the create-booking route handler re-runs it server-side so a tampered client
  * payload can't change the charged total. All amounts are integer cents.
  */
-import { SERVICE_FEE_PCT } from "@/lib/constants";
-import type { BookingAddonLine, Listing, Package, PriceBreakdown } from "@/types/domain";
+import { SERVICE_FEE_PCT } from "../config";
+import type { BookingAddonLine, Listing, Package, PriceBreakdown } from "../types/domain";
 
 export interface AddonSelection {
   addonId: string;

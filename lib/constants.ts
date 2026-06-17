@@ -10,10 +10,10 @@ export const SITE = {
 
 /**
  * Marketplace economics. Surfaced as a checkout line item even while payments are
- * simulated, so the revenue model is visible in the demo.
- * Read from env when present so it can be tuned without a code change.
+ * simulated, so the revenue model is visible in the demo. The canonical value lives
+ * in `@stint/core` (shared with the mobile app); re-exported here for convenience.
  */
-export const SERVICE_FEE_PCT = Number(process.env.NEXT_PUBLIC_SERVICE_FEE_PCT ?? 0.12);
+export { SERVICE_FEE_PCT } from "@stint/core/config";
 /** Provider-side commission — used for the "you'll earn" narrative on the provider side. */
 export const PROVIDER_COMMISSION_PCT = 0.1;
 

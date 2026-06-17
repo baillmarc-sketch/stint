@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { createBookingSchema } from "@/lib/validations/booking";
+import { createBookingSchema } from "@stint/core/validations/booking";
 import { getListing } from "@/lib/queries";
-import { computeQuote } from "@/lib/booking/pricing";
+import { computeQuote } from "@stint/core/booking/pricing";
 import { createConnectPaymentIntent } from "@/lib/payments";
 import { isStripeEnabled } from "@/lib/stripe";
 import { isSupabaseConfigured } from "@/lib/supabase/config";

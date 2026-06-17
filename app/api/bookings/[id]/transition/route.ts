@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { canTransition } from "@/lib/booking/state-machine";
+import { canTransition } from "@stint/core/booking/state-machine";
 import { getPaymentProvider } from "@/lib/payments";
 import { getStoredBooking, updateStoredBooking, type StoredBooking } from "@/lib/bookings-store";
 import type { BookingStatus, PaymentStatus } from "@/types/domain";

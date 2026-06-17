@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { computeQuote, providerEarningsCents } from "@/lib/booking/pricing";
-import type { Addon, Listing, Package } from "@/types/domain";
+import { computeQuote, providerEarningsCents } from "./pricing";
+import type { Addon, Listing, Package } from "../types/domain";
 
 function makeListing(overrides: Partial<Listing> = {}): Listing {
   return {

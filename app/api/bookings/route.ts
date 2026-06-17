@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { nanoid } from "nanoid";
-import { createBookingSchema } from "@/lib/validations/booking";
+import { createBookingSchema } from "@stint/core/validations/booking";
 import { getListing } from "@/lib/queries";
-import { computeQuote } from "@/lib/booking/pricing";
-import { initialStatus } from "@/lib/booking/state-machine";
+import { computeQuote } from "@stint/core/booking/pricing";
+import { initialStatus } from "@stint/core/booking/state-machine";
 import { getPaymentProvider, retrievePaymentIntent } from "@/lib/payments";
 import { addStoredBooking, type StoredBooking } from "@/lib/bookings-store";
 import { isSupabaseConfigured } from "@/lib/supabase/config";

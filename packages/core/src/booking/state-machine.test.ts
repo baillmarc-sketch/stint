@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { canTransition, isTerminal, initialStatus } from "@/lib/booking/state-machine";
+import { canTransition, isTerminal, initialStatus } from "./state-machine";
 
 describe("booking state machine", () => {
   it("allows legal transitions", () => {

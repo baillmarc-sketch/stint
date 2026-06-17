@@ -17,7 +17,7 @@ import {
   Zap,
 } from "lucide-react";
 import type { Listing, Provider } from "@/types/domain";
-import { computeQuote, type AddonSelection } from "@/lib/booking/pricing";
+import { computeQuote, type AddonSelection } from "@stint/core/booking/pricing";
 import { NYC_NEIGHBORHOODS } from "@/lib/constants";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
