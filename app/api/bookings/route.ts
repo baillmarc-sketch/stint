@@ -8,6 +8,7 @@ import { getPaymentProvider, retrievePaymentIntent } from "@/lib/payments";
 import { addStoredBooking, type StoredBooking } from "@/lib/bookings-store";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { notifyUser } from "@/lib/push";
 import { isStripeEnabled } from "@/lib/stripe";
 import { getOptionalUser } from "@/lib/auth";
 
@@ -132,6 +133,22 @@ export async function POST(request: Request) {
       .update({ is_booked: true, booking_id: stored.id })
       .eq("id", input.slotId)
       .eq("is_booked", false);
+  }
+
+  // Notify the provider's owner of the new booking (best-effort push).
+  if (isSupabaseConfigured()) {
+    const { data: prov } = await createSupabaseAdminClient()
+      .from("providers")
+      .select("owner_id")
+      .eq("id", provider.id)
+      .maybeSingle();
+    if (prov?.owner_id) {
+      await notifyUser(
+        prov.owner_id as string,
+        "New booking 🎉",
+        `${listing.title} · ${input.guestCount} guests on ${input.eventDate}`,
+      );
+    }
   }
 
   return NextResponse.json({ bookingId: stored.id, status });

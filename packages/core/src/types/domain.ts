@@ -194,3 +194,19 @@ export interface Booking {
   price: PriceBreakdown;
   createdAt: string;
 }
+
+/** Compact booking row for "my bookings" lists (web + native). */
+export interface BookingSummary {
+  id: string;
+  providerName: string;
+  providerSlug: string;
+  providerAvatarUrl: string;
+  listingTitle: string;
+  status: BookingStatus;
+  paymentStatus: PaymentStatus;
+  eventDate: string;
+  startTime: string;
+  guestCount: number;
+  totalCents: number;
+  createdAt: string;
+}

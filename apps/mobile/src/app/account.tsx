@@ -8,7 +8,7 @@ import {
   View,
   useColorScheme,
 } from "react-native";
-import { Stack } from "expo-router";
+import { Link, Stack } from "expo-router";
 import { Colors } from "@/constants/theme";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth";
@@ -66,6 +66,11 @@ export default function Account() {
         <View style={{ gap: 14 }}>
           <Text style={[styles.h1, { color: c.text }]}>You&apos;re signed in</Text>
           <Text style={[styles.body, { color: c.textSecondary }]}>{session.user.email}</Text>
+          <Link href="/bookings" asChild>
+            <Pressable style={[styles.btnOutline, { borderColor: c.backgroundSelected }]}>
+              <Text style={{ color: c.text, fontWeight: "700" }}>My bookings</Text>
+            </Pressable>
+          </Link>
           <Pressable onPress={signOut} style={[styles.btnOutline, { borderColor: c.backgroundSelected }]}>
             <Text style={{ color: c.text, fontWeight: "700" }}>Sign out</Text>
           </Pressable>

@@ -4,9 +4,9 @@
  * via the shared mappers, so web and mobile read identical shapes.
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Category, Provider } from "@stint/core";
-import { toCategory, toProvider } from "./mappers";
-import type { CategoryRow, ProviderRow } from "./db-types";
+import type { BookingSummary, Category, Provider } from "@stint/core";
+import { toBookingSummary, toCategory, toProvider } from "./mappers";
+import type { BookingRow, CategoryRow, ProviderRow } from "./db-types";
 
 const LISTING_EMBED = "*, packages(*), addons(*), media(*)";
 const PROVIDER_FULL = `*, listings(${LISTING_EMBED}), reviews(*), availability_rules(*)`;
@@ -39,4 +39,14 @@ export async function fetchProviderBySlug(
     .eq("is_published", true)
     .maybeSingle();
   return data ? toProvider(data as unknown as ProviderRow) : undefined;
+}
+
+/** The signed-in customer's bookings (RLS scopes to their own rows). */
+export async function fetchMyBookings(db: SupabaseClient): Promise<BookingSummary[]> {
+  const { data, error } = await db
+    .from("bookings")
+    .select("*, providers(slug, business_name, avatar_url), listings(title)")
+    .order("created_at", { ascending: false });
+  if (error) throw new Error(`[data] fetchMyBookings: ${error.message}`);
+  return ((data ?? []) as unknown as BookingRow[]).map(toBookingSummary);
 }

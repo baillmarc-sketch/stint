@@ -41,7 +41,8 @@
           "merchantIdentifier": "merchant.com.stint",
           "enableGooglePay": false
         }
-      ]
+      ],
+      "expo-notifications"
     ],
     "experiments": {
       "typedRoutes": false,

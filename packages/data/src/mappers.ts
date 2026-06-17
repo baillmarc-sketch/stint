@@ -7,6 +7,7 @@ import type {
   Addon,
   AvailabilityRule,
   AvailabilitySlot,
+  BookingSummary,
   Category,
   Listing,
   Media,
@@ -18,6 +19,7 @@ import type {
   AddonRow,
   AvailabilityRuleRow,
   AvailabilitySlotRow,
+  BookingRow,
   CategoryRow,
   ListingRow,
   MediaRow,
@@ -145,5 +147,22 @@ export function toProvider(r: ProviderRow): Provider {
     slots: (r.availability_slots ?? []).map(toAvailabilitySlot),
     listings: (r.listings ?? []).map(toListing),
     reviews,
+  };
+}
+
+export function toBookingSummary(r: BookingRow): BookingSummary {
+  return {
+    id: r.id,
+    providerName: r.providers?.business_name ?? "",
+    providerSlug: r.providers?.slug ?? "",
+    providerAvatarUrl: r.providers?.avatar_url ?? "",
+    listingTitle: r.listings?.title ?? "",
+    status: r.status,
+    paymentStatus: r.payment_status,
+    eventDate: r.event_date,
+    startTime: r.start_time.slice(0, 5),
+    guestCount: r.guest_count,
+    totalCents: r.total_cents,
+    createdAt: r.created_at,
   };
 }
