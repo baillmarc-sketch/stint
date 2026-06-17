@@ -1,6 +1,14 @@
-import { useLocalSearchParams } from "expo-router";
+import { Link, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View, useColorScheme } from "react-native";
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  useColorScheme,
+} from "react-native";
 import { Image } from "expo-image";
 import { formatPrice, type Provider } from "@stint/core";
 import { Colors } from "@/constants/theme";
@@ -86,9 +94,11 @@ export default function ProviderDetail() {
             </Text>
           </View>
         ) : null}
-        <Text style={[styles.note, { color: c.textSecondary }]}>
-          In-app booking is coming soon — powered by the same @stint/core pricing as the web app.
-        </Text>
+        <Link href={`/book/${provider.id}`} asChild>
+          <Pressable style={styles.cta}>
+            <Text style={styles.ctaText}>Book this provider</Text>
+          </Pressable>
+        </Link>
       </View>
     </ScrollView>
   );
@@ -112,4 +122,7 @@ const styles = StyleSheet.create({
   price: { fontSize: 24, fontWeight: "800", marginTop: 2 },
   unit: { fontSize: 14, fontWeight: "500" },
   note: { fontSize: 13, lineHeight: 19, marginTop: 16 },
+  cta: { marginTop: 20, backgroundColor: "#7c3aed", borderRadius: 14, paddingVertical: 16, alignItems: "center" },
+  ctaText: { color: "#fff", fontWeight: "800", fontSize: 16 },
 });
+

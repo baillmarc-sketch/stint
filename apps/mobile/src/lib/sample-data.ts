@@ -79,7 +79,7 @@ function build(s: Seed): Provider {
 
 export const sampleProviders: Provider[] = [
   build({
-    id: "sakura-hibachi",
+    id: "sakura-hibachi-at-home",
     businessName: "Sakura Hibachi at Home",
     ownerName: "Kenji Watanabe",
     categoryId: "cat-food-drink",
@@ -99,7 +99,7 @@ export const sampleProviders: Provider[] = [
     includes: ["Chef + portable grill", "Fried rice & vegetables", "Signature sauces", "Setup and cleanup"],
   }),
   build({
-    id: "velvet-pour",
+    id: "the-velvet-pour-bar-co",
     businessName: "The Velvet Pour Bar Co.",
     ownerName: "Simone Adler",
     categoryId: "cat-food-drink",
@@ -119,7 +119,7 @@ export const sampleProviders: Provider[] = [
     includes: ["Custom 3-cocktail menu", "Bar kit & shakers", "Garnish prep", "Setup & breakdown"],
   }),
   build({
-    id: "dj-pulse",
+    id: "dj-pulse-nyc",
     businessName: "DJ Pulse NYC",
     ownerName: "Andre Coleman",
     categoryId: "cat-music",
@@ -139,7 +139,7 @@ export const sampleProviders: Provider[] = [
     includes: ["Pro PA system", "Dance-floor lighting", "MC / announcements", "Playlist planning call"],
   }),
   build({
-    id: "bubbles-clown",
+    id: "bubbles-the-clown-co",
     businessName: "Bubbles the Clown & Co.",
     ownerName: "Carla Jimenez",
     categoryId: "cat-kids",
@@ -159,7 +159,7 @@ export const sampleProviders: Provider[] = [
     includes: ["1 hour of entertainment", "Interactive games", "Simple magic", "Balloon animals for all"],
   }),
   build({
-    id: "goldlight-photo",
+    id: "goldlight-event-photography",
     businessName: "Goldlight Event Photography",
     ownerName: "Devon Pierce",
     categoryId: "cat-photo-video",
@@ -179,7 +179,7 @@ export const sampleProviders: Provider[] = [
     includes: ["Pro photographer", "Candid + posed", "Edited online gallery", "48-hr sneak peek"],
   }),
   build({
-    id: "afterparty-cleaning",
+    id: "afterparty-cleaning-crew",
     businessName: "AfterParty Cleaning Crew",
     ownerName: "Lucia Romano",
     categoryId: "cat-cleaning",

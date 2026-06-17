@@ -19,21 +19,30 @@ over your local network — keep your phone on the same Wi‑Fi.
 > iOS Simulator (`npx expo start --ios`) needs a Mac with Xcode. Expo Go works
 > from any machine.
 
-## What's here (v1)
+## What's here
 
-- **Browse** (`src/app/index.tsx`) and **provider detail** (`src/app/provider/[id].tsx`)
-  screens, styled with the shared color theme.
-- A **bundled sample dataset** (`src/lib/sample-data.ts`) using the shared
-  `@stint/core` `Provider` type, so the app renders with **zero backend**.
-- Prices rendered with `formatPrice` from `@stint/core` — the same money logic the
-  web app uses.
+- **Browse** + **provider detail** + **booking** screens, styled with the shared theme.
+- **Live data** via `@stint/data`: set `EXPO_PUBLIC_SUPABASE_URL` / `_ANON_KEY` to read
+  published providers from Supabase (RLS-scoped); otherwise a bundled sample renders so
+  the app works with **zero backend**.
+- **Booking** (`src/app/book/[id].tsx`): pick an available slot, set guests, see the live
+  price (`computeQuote` from `@stint/core`), then **Reserve & pay** opens the web Stripe
+  checkout in an in-app browser — reusing the same payment flow as the web app.
 
-## Next increments
+## Configuration (`.env` / EAS env)
 
-- **Live data:** swap `sample-data` for a Supabase fetch (set `EXPO_PUBLIC_SUPABASE_URL`
-  / `EXPO_PUBLIC_SUPABASE_ANON_KEY`) once the shared query layer lands.
-- **Auth:** Supabase OAuth + deep links. **Payments:** `@stripe/stripe-react-native`
-  PaymentSheet (Apple Pay) hitting the existing `/api/payments/intent`.
+```bash
+EXPO_PUBLIC_SUPABASE_URL=          # optional — live data (else sample)
+EXPO_PUBLIC_SUPABASE_ANON_KEY=
+EXPO_PUBLIC_WEB_URL=               # checkout target (defaults to the live demo)
+```
+
+## Next increment — native payments
+
+The browser handoff works in Expo Go today. For **native Apple Pay**, add
+`@stripe/stripe-react-native` PaymentSheet hitting the existing `/api/payments/intent`
+— that's a native module, so it needs an **EAS dev build** (not Expo Go) and the API
+must accept the Supabase session as a Bearer token.
 
 ## Monorepo / pnpm note
 
