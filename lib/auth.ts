@@ -51,9 +51,10 @@ export async function getProviderContext(): Promise<ProviderContext | null> {
   if (!isSupabaseConfigured()) return null;
   try {
     const supabase = await createSupabaseServerClient();
+    const token = await getBearerToken();
     const {
       data: { user },
-    } = await supabase.auth.getUser();
+    } = token ? await supabase.auth.getUser(token) : await supabase.auth.getUser();
     if (!user) return null;
     const { data } = await supabase
       .from("providers")

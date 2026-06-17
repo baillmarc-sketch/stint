@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { Link, Stack } from "expo-router";
 import { Colors } from "@/constants/theme";
+import { fetchMyProvider } from "@stint/data/queries";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth";
 
@@ -17,6 +18,19 @@ export default function Account() {
   const scheme = useColorScheme() === "dark" ? "dark" : "light";
   const c = Colors[scheme];
   const { session, enabled } = useAuth();
+  const [isProvider, setIsProvider] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    if (supabase && session) {
+      fetchMyProvider(supabase, session.user.id)
+        .then((p) => active && setIsProvider(Boolean(p)))
+        .catch(() => {});
+    }
+    return () => {
+      active = false;
+    };
+  }, [session]);
 
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
@@ -71,6 +85,13 @@ export default function Account() {
               <Text style={{ color: c.text, fontWeight: "700" }}>My bookings</Text>
             </Pressable>
           </Link>
+          {isProvider && (
+            <Link href="/manage" asChild>
+              <Pressable style={[styles.btnOutline, { borderColor: c.backgroundSelected }]}>
+                <Text style={{ color: c.text, fontWeight: "700" }}>Manage bookings (provider)</Text>
+              </Pressable>
+            </Link>
+          )}
           <Pressable onPress={signOut} style={[styles.btnOutline, { borderColor: c.backgroundSelected }]}>
             <Text style={{ color: c.text, fontWeight: "700" }}>Sign out</Text>
           </Pressable>

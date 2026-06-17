@@ -36,3 +36,16 @@ export async function createBooking(body: unknown): Promise<{ bookingId: string 
   if (!res.ok) throw new Error(data.error ?? "Could not book");
   return data as { bookingId: string };
 }
+
+/** Provider action on a booking (accept/decline/quote/complete/cancel). */
+export async function transitionBooking(id: string, action: string): Promise<void> {
+  const res = await fetch(`${API_URL}/api/bookings/${id}/transition`, {
+    method: "POST",
+    headers: await authHeaders(),
+    body: JSON.stringify({ action }),
+  });
+  if (!res.ok) {
+    const data = (await res.json().catch(() => ({}))) as { error?: string };
+    throw new Error(data.error ?? "Could not update booking");
+  }
+}

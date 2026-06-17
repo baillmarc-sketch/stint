@@ -50,3 +50,38 @@ export async function fetchMyBookings(db: SupabaseClient): Promise<BookingSummar
   if (error) throw new Error(`[data] fetchMyBookings: ${error.message}`);
   return ((data ?? []) as unknown as BookingRow[]).map(toBookingSummary);
 }
+
+export interface MyProvider {
+  id: string;
+  slug: string;
+  businessName: string;
+}
+
+/** The provider storefront owned by `ownerId`, if any. */
+export async function fetchMyProvider(
+  db: SupabaseClient,
+  ownerId: string,
+): Promise<MyProvider | null> {
+  const { data } = await db
+    .from("providers")
+    .select("id, slug, business_name")
+    .eq("owner_id", ownerId)
+    .maybeSingle();
+  return data
+    ? { id: data.id as string, slug: data.slug as string, businessName: data.business_name as string }
+    : null;
+}
+
+/** Bookings for a provider the caller owns (RLS: is_provider_owner). */
+export async function fetchProviderBookings(
+  db: SupabaseClient,
+  providerId: string,
+): Promise<BookingSummary[]> {
+  const { data, error } = await db
+    .from("bookings")
+    .select("*, providers(slug, business_name, avatar_url), listings(title)")
+    .eq("provider_id", providerId)
+    .order("created_at", { ascending: false });
+  if (error) throw new Error(`[data] fetchProviderBookings: ${error.message}`);
+  return ((data ?? []) as unknown as BookingRow[]).map(toBookingSummary);
+}

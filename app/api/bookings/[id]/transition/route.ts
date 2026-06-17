@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { canTransition } from "@stint/core/booking/state-machine";
+import { getProviderContext } from "@/lib/auth";
 import { getPaymentProvider } from "@/lib/payments";
 import { getStoredBooking, updateStoredBooking, type StoredBooking } from "@/lib/bookings-store";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
@@ -35,6 +36,15 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       { error: `Cannot ${parsed.data.action} a ${booking.status} booking` },
       { status: 409 },
     );
+  }
+
+  // Provider-only actions require ownership of the booking's provider (DB mode).
+  const PROVIDER_ACTIONS = new Set(["accept", "decline", "quote", "complete"]);
+  if (isSupabaseConfigured() && PROVIDER_ACTIONS.has(parsed.data.action)) {
+    const pc = await getProviderContext();
+    if (!pc || pc.id !== booking.providerId) {
+      return NextResponse.json({ error: "Not authorized" }, { status: 403 });
+    }
   }
 
   // Advance the payment lifecycle alongside the status change.
