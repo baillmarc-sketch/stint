@@ -29,6 +29,9 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
 
+      - name: Typecheck mobile
+        run: pnpm --filter @stint/mobile typecheck
+
       - name: Test
         run: pnpm test
 

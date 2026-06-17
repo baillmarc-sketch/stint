@@ -1,6 +1,8 @@
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider, useRouter } from "expo-router";
+import { useEffect } from "react";
 import { Pressable, Text, useColorScheme } from "react-native";
 import { StatusBar } from "expo-status-bar";
+import * as Notifications from "expo-notifications";
 import { AuthProvider, useAuth } from "@/lib/auth";
 
 function AccountButton() {
@@ -15,6 +17,16 @@ function AccountButton() {
 
 export default function RootLayout() {
   const scheme = useColorScheme();
+  const router = useRouter();
+
+  // Tapping a push (e.g. a new-booking alert) opens the bookings list.
+  useEffect(() => {
+    const sub = Notifications.addNotificationResponseReceivedListener(() => {
+      router.push("/bookings");
+    });
+    return () => sub.remove();
+  }, [router]);
+
   return (
     <AuthProvider>
       <ThemeProvider value={scheme === "dark" ? DarkTheme : DefaultTheme}>

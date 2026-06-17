@@ -8,6 +8,16 @@ const API_URL =
   process.env.EXPO_PUBLIC_WEB_URL ??
   "https://stint-ten.vercel.app";
 
+// Show notifications while the app is foregrounded.
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowBanner: true,
+    shouldShowList: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+  }),
+});
+
 /**
  * Register this device's Expo push token with the backend (best-effort). Remote
  * push requires a physical device + a dev build, so this is a no-op in Expo Go and
