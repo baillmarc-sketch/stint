@@ -1,7 +1,8 @@
-import { Stack, useLocalSearchParams } from "expo-router";
+import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -10,11 +11,17 @@ import {
   useColorScheme,
 } from "react-native";
 import * as WebBrowser from "expo-web-browser";
+import Constants from "expo-constants";
 import { computeQuote, formatPrice, type Provider } from "@stint/core";
 import { Colors } from "@/constants/theme";
 import { loadProvider } from "@/lib/data";
+import { useAuth } from "@/lib/auth";
+import { createBooking, createPaymentIntent } from "@/lib/api";
+import { payWithPaymentSheet } from "@/lib/native-checkout";
 
 const WEB_URL = process.env.EXPO_PUBLIC_WEB_URL ?? "https://stint-ten.vercel.app";
+const STRIPE_PK = process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+const IS_EXPO_GO = Constants.appOwnership === "expo";
 
 function fmtDate(d: string): string {
   return new Date(`${d}T00:00:00`).toLocaleDateString("en-US", {
@@ -26,12 +33,17 @@ function fmtDate(d: string): string {
 
 export default function BookScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const router = useRouter();
   const scheme = useColorScheme() === "dark" ? "dark" : "light";
   const c = Colors[scheme];
+  const { session } = useAuth();
+
   const [provider, setProvider] = useState<Provider | undefined>(undefined);
   const [loading, setLoading] = useState(true);
   const [slotId, setSlotId] = useState<string | null>(null);
   const [guestCount, setGuestCount] = useState(12);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -74,9 +86,58 @@ export default function BookScreen() {
   }
 
   const listingId = listing.id;
-  const reserve = async () => {
+  const durationHours = listing.minHours ?? 3;
+  const hood = provider.neighborhood;
+  // Native Apple Pay / PaymentSheet needs a dev build (not Expo Go), a Stripe key,
+  // and a signed-in user (the API authenticates via the Supabase access token).
+  const canPayNative = !IS_EXPO_GO && Boolean(STRIPE_PK) && Boolean(session);
+
+  function bookingInput() {
+    const slot = openSlots.find((s) => s.id === slotId);
+    return {
+      listingId,
+      packageId: null,
+      addonSelections: [],
+      eventDate: slot?.date ?? today,
+      startTime: slot?.startTime ?? "18:00",
+      durationHours,
+      guestCount,
+      eventAddress: `${hood}, NYC`,
+      eventNeighborhood: hood,
+      notes: "",
+      slotId: slotId ?? undefined,
+    };
+  }
+
+  async function reserveNative() {
+    setBusy(true);
+    setMsg(null);
+    try {
+      const input = bookingInput();
+      const { clientSecret } = await createPaymentIntent(input);
+      const paymentIntentId = clientSecret.split("_secret_")[0];
+      const pay = await payWithPaymentSheet({
+        clientSecret,
+        publishableKey: STRIPE_PK as string,
+        merchantId: process.env.EXPO_PUBLIC_STRIPE_MERCHANT_ID,
+      });
+      if (!pay.ok) {
+        setMsg(pay.error);
+        return;
+      }
+      const { bookingId } = await createBooking({ ...input, paymentIntentId });
+      Alert.alert("You're booked! 🎉", `Confirmation: ${bookingId}`);
+      router.back();
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : "Something went wrong");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function reserveWeb() {
     await WebBrowser.openBrowserAsync(`${WEB_URL}/book/${listingId}`);
-  };
+  }
 
   return (
     <>
@@ -139,12 +200,21 @@ export default function BookScreen() {
           <PriceRow label="Total" value={formatPrice(quote.price.totalCents)} c={c} bold />
         </View>
 
-        <Pressable onPress={reserve} style={styles.cta}>
-          <Text style={styles.ctaText}>Reserve &amp; pay · {formatPrice(quote.price.totalCents)}</Text>
+        {msg && <Text style={[styles.msg, { color: c.textSecondary }]}>{msg}</Text>}
+
+        <Pressable onPress={canPayNative ? reserveNative : reserveWeb} disabled={busy} style={styles.cta}>
+          {busy ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.ctaText}>
+              {canPayNative ? "Pay" : "Reserve & pay"} · {formatPrice(quote.price.totalCents)}
+            </Text>
+          )}
         </Pressable>
         <Text style={[styles.note, { color: c.textSecondary }]}>
-          Secure checkout opens in your browser — the same Stripe flow as the web app. Native Apple
-          Pay arrives in a dev build.
+          {canPayNative
+            ? "Apple Pay / card via Stripe PaymentSheet."
+            : "Secure checkout opens in your browser — the same Stripe flow as the web app. Native Apple Pay activates in a dev build when signed in."}
         </Text>
       </ScrollView>
     </>
@@ -187,6 +257,7 @@ const styles = StyleSheet.create({
   priceCard: { marginTop: 22, padding: 16, borderRadius: 16, gap: 8 },
   priceRow: { flexDirection: "row", justifyContent: "space-between" },
   divider: { height: StyleSheet.hairlineWidth, backgroundColor: "rgba(128,128,128,0.3)", marginVertical: 2 },
+  msg: { fontSize: 13, marginTop: 12 },
   cta: { marginTop: 18, backgroundColor: "#7c3aed", borderRadius: 14, paddingVertical: 16, alignItems: "center" },
   ctaText: { color: "#fff", fontWeight: "800", fontSize: 16 },
   note: { fontSize: 13, lineHeight: 19, marginTop: 14 },

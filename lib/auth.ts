@@ -1,6 +1,6 @@
 import "server-only";
 import { isSupabaseConfigured } from "./supabase/config";
-import { createSupabaseServerClient } from "./supabase/server";
+import { createSupabaseServerClient, getBearerToken } from "./supabase/server";
 
 export interface CurrentUser {
   id: string;
@@ -25,9 +25,10 @@ export async function getOptionalUser(): Promise<CurrentUser | null> {
   if (!isSupabaseConfigured()) return null;
   try {
     const supabase = await createSupabaseServerClient();
+    const token = await getBearerToken();
     const {
       data: { user },
-    } = await supabase.auth.getUser();
+    } = token ? await supabase.auth.getUser(token) : await supabase.auth.getUser();
     if (!user) return null;
     const meta = user.user_metadata ?? {};
     return {

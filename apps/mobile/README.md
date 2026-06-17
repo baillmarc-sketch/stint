@@ -25,24 +25,32 @@ over your local network — keep your phone on the same Wi‑Fi.
 - **Live data** via `@stint/data`: set `EXPO_PUBLIC_SUPABASE_URL` / `_ANON_KEY` to read
   published providers from Supabase (RLS-scoped); otherwise a bundled sample renders so
   the app works with **zero backend**.
+- **Accounts** (`src/app/account.tsx`): email one-time-code sign-in via Supabase Auth,
+  session persisted with AsyncStorage. Works in Expo Go.
 - **Booking** (`src/app/book/[id].tsx`): pick an available slot, set guests, see the live
-  price (`computeQuote` from `@stint/core`), then **Reserve & pay** opens the web Stripe
-  checkout in an in-app browser — reusing the same payment flow as the web app.
+  price (`computeQuote` from `@stint/core`), then pay:
+  - **Expo Go:** opens the web Stripe checkout in an in-app browser (same flow as web).
+  - **Dev build + signed in:** native **Apple Pay / card** via Stripe PaymentSheet,
+    hitting `/api/payments/intent` + `/api/bookings` with the Supabase session as a
+    Bearer token (the API is Bearer-aware, RLS-scoped).
 
 ## Configuration (`.env` / EAS env)
 
 ```bash
-EXPO_PUBLIC_SUPABASE_URL=          # optional — live data (else sample)
+EXPO_PUBLIC_SUPABASE_URL=             # optional — live data + accounts (else sample)
 EXPO_PUBLIC_SUPABASE_ANON_KEY=
-EXPO_PUBLIC_WEB_URL=               # checkout target (defaults to the live demo)
+EXPO_PUBLIC_WEB_URL=                  # web checkout target (defaults to the live demo)
+EXPO_PUBLIC_API_URL=                  # API base for native pay (defaults to WEB_URL)
+EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY=   # enables native PaymentSheet (dev build only)
+EXPO_PUBLIC_STRIPE_MERCHANT_ID=       # Apple merchant id for Apple Pay
 ```
 
-## Next increment — native payments
+## Native payments need a dev build
 
-The browser handoff works in Expo Go today. For **native Apple Pay**, add
-`@stripe/stripe-react-native` PaymentSheet hitting the existing `/api/payments/intent`
-— that's a native module, so it needs an **EAS dev build** (not Expo Go) and the API
-must accept the Supabase session as a Bearer token.
+`@stripe/stripe-react-native` is a native module **not present in Expo Go** — it's
+loaded lazily and only used from an **EAS dev build** (`npx expo run:ios` or
+`eas build`). The API target must run with `PAYMENTS_PROVIDER=stripe` and a connected
+provider. In Expo Go the app automatically uses the web-checkout handoff instead.
 
 ## Monorepo / pnpm note
 

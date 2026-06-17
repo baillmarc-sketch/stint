@@ -129,7 +129,7 @@ export async function POST(request: Request) {
   if (input.slotId && isSupabaseConfigured()) {
     await createSupabaseAdminClient()
       .from("availability_slots")
-      .update({ is_booked: true })
+      .update({ is_booked: true, booking_id: stored.id })
       .eq("id", input.slotId)
       .eq("is_booked", false);
   }

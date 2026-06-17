@@ -2,7 +2,7 @@ import "server-only";
 import { cookies } from "next/headers";
 import type { Booking } from "@/types/domain";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseServerClient, getBearerToken } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import type { BookingRow } from "@stint/data/db-types";
 
@@ -144,9 +144,10 @@ export async function addStoredBooking(booking: StoredBooking): Promise<StoredBo
   }
 
   const db = await createSupabaseServerClient();
+  const token = await getBearerToken();
   const {
     data: { user },
-  } = await db.auth.getUser();
+  } = token ? await db.auth.getUser(token) : await db.auth.getUser();
   if (!user) throw new Error("Sign in required to book");
 
   const { data: inserted, error } = await db

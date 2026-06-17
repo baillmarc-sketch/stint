@@ -34,6 +34,13 @@
             "imageWidth": 76
           }
         }
+      ],
+      [
+        "@stripe/stripe-react-native",
+        {
+          "merchantIdentifier": "merchant.com.stint",
+          "enableGooglePay": false
+        }
       ]
     ],
     "experiments": {

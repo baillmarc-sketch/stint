@@ -3,6 +3,8 @@ import { z } from "zod";
 import { canTransition } from "@stint/core/booking/state-machine";
 import { getPaymentProvider } from "@/lib/payments";
 import { getStoredBooking, updateStoredBooking, type StoredBooking } from "@/lib/bookings-store";
+import { isSupabaseConfigured } from "@/lib/supabase/config";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import type { BookingStatus, PaymentStatus } from "@/types/domain";
 
 const bodySchema = z.object({
@@ -64,6 +66,14 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   ) {
     const r = await payments.refund(booking.paymentRef);
     patch.paymentStatus = r.status as PaymentStatus;
+  }
+
+  // Free the reserved availability slot when a booking is cancelled or declined.
+  if ((target === "cancelled" || target === "declined") && isSupabaseConfigured()) {
+    await createSupabaseAdminClient()
+      .from("availability_slots")
+      .update({ is_booked: false, booking_id: null })
+      .eq("booking_id", id);
   }
 
   const updated = await updateStoredBooking(id, patch);
