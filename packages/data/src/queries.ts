@@ -6,7 +6,13 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { AvailabilitySlot, BookingSummary, Category, Provider } from "@stint/core";
 import { toAvailabilitySlot, toBookingSummary, toCategory, toProvider } from "./mappers";
-import type { AvailabilitySlotRow, BookingRow, CategoryRow, ProviderRow } from "./db-types";
+import type {
+  AvailabilitySlotRow,
+  BookingRow,
+  CategoryRow,
+  MessageRow,
+  ProviderRow,
+} from "./db-types";
 
 const LISTING_EMBED = "*, packages(*), addons(*), media(*)";
 const PROVIDER_FULL = `*, listings(${LISTING_EMBED}), reviews(*), availability_rules(*)`;
@@ -122,4 +128,37 @@ export async function addProviderSlot(
 export async function deleteProviderSlot(db: SupabaseClient, id: string): Promise<void> {
   const { error } = await db.from("availability_slots").delete().eq("id", id).eq("is_booked", false);
   if (error) throw new Error(`[data] deleteProviderSlot: ${error.message}`);
+}
+
+export interface ThreadMessage {
+  id: string;
+  senderId: string | null;
+  kind: "text" | "system" | "quote";
+  body: string;
+  createdAt: string;
+}
+
+/** Messages on a booking's thread (RLS scopes to participants; empty if no thread yet). */
+export async function fetchBookingMessages(
+  db: SupabaseClient,
+  bookingId: string,
+): Promise<ThreadMessage[]> {
+  const { data: thread } = await db
+    .from("message_threads")
+    .select("id")
+    .eq("booking_id", bookingId)
+    .maybeSingle();
+  if (!thread) return [];
+  const { data } = await db
+    .from("messages")
+    .select("*")
+    .eq("thread_id", (thread as { id: string }).id)
+    .order("created_at", { ascending: true });
+  return ((data ?? []) as MessageRow[]).map((m) => ({
+    id: m.id,
+    senderId: m.sender_id,
+    kind: m.kind,
+    body: m.body,
+    createdAt: m.created_at,
+  }));
 }

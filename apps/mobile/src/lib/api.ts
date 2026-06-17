@@ -49,3 +49,16 @@ export async function transitionBooking(id: string, action: string): Promise<voi
     throw new Error(data.error ?? "Could not update booking");
   }
 }
+
+/** Post a message to a booking's thread. */
+export async function sendMessage(bookingId: string, body: string): Promise<void> {
+  const res = await fetch(`${API_URL}/api/messages`, {
+    method: "POST",
+    headers: await authHeaders(),
+    body: JSON.stringify({ bookingId, body }),
+  });
+  if (!res.ok) {
+    const data = (await res.json().catch(() => ({}))) as { error?: string };
+    throw new Error(data.error ?? "Could not send message");
+  }
+}

@@ -2,7 +2,7 @@ import "server-only";
 import { cookies } from "next/headers";
 import { nanoid } from "nanoid";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseServerClient, getBearerToken } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import type { MessageRow, MessageThreadRow } from "@stint/data/db-types";
 
@@ -131,9 +131,10 @@ export async function appendMessages(
   if (!thread) throw new Error("Thread not found");
 
   const db = await createSupabaseServerClient();
+  const token = await getBearerToken();
   const {
     data: { user },
-  } = await db.auth.getUser();
+  } = token ? await db.auth.getUser(token) : await db.auth.getUser();
   if (!user) throw new Error("Sign in required to message");
 
   // The authed participant authors their own messages; system notes use kind 'system'.

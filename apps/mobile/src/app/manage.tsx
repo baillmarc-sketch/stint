@@ -9,7 +9,7 @@ import {
   View,
   useColorScheme,
 } from "react-native";
-import { Stack } from "expo-router";
+import { Link, Stack } from "expo-router";
 import { formatPrice, type BookingSummary } from "@stint/core";
 import { fetchMyProvider, fetchProviderBookings, type MyProvider } from "@stint/data/queries";
 import { Colors } from "@/constants/theme";
@@ -133,6 +133,11 @@ export default function Manage() {
               <Text style={[styles.meta, { color: c.textSecondary }]}>
                 {fmtDate(item.eventDate)} · {item.startTime} · {item.guestCount} guests · {item.status}
               </Text>
+              <Link href={`/thread/${item.id}`} asChild>
+                <Pressable hitSlop={6}>
+                  <Text style={{ color: "#7c3aed", fontWeight: "700", fontSize: 13 }}>Message</Text>
+                </Pressable>
+              </Link>
               {actions.length > 0 && (
                 <View style={styles.actions}>
                   {actions.map((a) => {

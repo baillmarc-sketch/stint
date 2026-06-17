@@ -2,13 +2,14 @@ import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
+  Pressable,
   RefreshControl,
   StyleSheet,
   Text,
   View,
   useColorScheme,
 } from "react-native";
-import { Stack } from "expo-router";
+import { Link, Stack } from "expo-router";
 import { formatPrice, type BookingSummary } from "@stint/core";
 import { fetchMyBookings } from "@stint/data/queries";
 import { Colors } from "@/constants/theme";
@@ -107,6 +108,13 @@ export default function Bookings() {
               </Text>
               <Text style={[styles.total, { color: c.text }]}>{formatPrice(item.totalCents)}</Text>
             </View>
+            <Link href={`/thread/${item.id}`} asChild>
+              <Pressable hitSlop={6}>
+                <Text style={{ color: "#7c3aed", fontWeight: "700", fontSize: 13, marginTop: 2 }}>
+                  Message
+                </Text>
+              </Pressable>
+            </Link>
           </View>
         )}
       />
