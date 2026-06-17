@@ -35,15 +35,26 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     );
   }
 
-  // Advance the (simulated) payment lifecycle alongside the status change.
+  // Advance the payment lifecycle alongside the status change.
   const payments = getPaymentProvider();
   const patch: Partial<StoredBooking> = { status: target };
 
-  if (target === "confirmed" && booking.paymentStatus === "none") {
-    const r = await payments.authorize(booking.price.totalCents, booking.id);
-    patch.paymentStatus = r.status;
-    patch.paymentRef = r.ref;
-  } else if (target === "completed" && booking.paymentRef) {
+  if (target === "confirmed") {
+    if (booking.paymentStatus === "none") {
+      // Simulated request-to-book: authorize on acceptance.
+      const r = await payments.authorize(booking.price.totalCents, booking.id);
+      patch.paymentStatus = r.status;
+      patch.paymentRef = r.ref;
+    } else if (booking.paymentStatus === "authorized" && booking.paymentRef) {
+      // Stripe: a held authorization is captured when the provider accepts.
+      const r = await payments.capture(booking.paymentRef);
+      patch.paymentStatus = r.status;
+    }
+  } else if (
+    target === "completed" &&
+    booking.paymentRef &&
+    booking.paymentStatus === "authorized"
+  ) {
     const r = await payments.capture(booking.paymentRef);
     patch.paymentStatus = r.status;
   } else if (

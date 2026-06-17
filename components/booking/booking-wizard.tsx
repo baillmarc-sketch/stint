@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -29,13 +30,35 @@ const TIME_OPTIONS = Array.from({ length: 13 }, (_, i) => {
 });
 
 const STEPS = ["Event details", "Add-ons", "Review & book"] as const;
+const REVIEW_STEP = 2;
+const PAYMENT_STEP = 3;
 
-export function BookingWizard({ listing, provider }: { listing: Listing; provider: Provider }) {
+// Inline Stripe PaymentElement, lazy-loaded so the SDK stays out of the demo bundle.
+const StripePaymentStep = dynamic(
+  () => import("./stripe-payment-step").then((m) => m.StripePaymentStep),
+  { ssr: false },
+);
+
+export function BookingWizard({
+  listing,
+  provider,
+  paymentsMode = "simulated",
+  stripePublishableKey = null,
+}: {
+  listing: Listing;
+  provider: Provider;
+  paymentsMode?: string;
+  stripePublishableKey?: string | null;
+}) {
   const router = useRouter();
   const isPackage = listing.pricingModel === "package";
   const isHourly = listing.pricingModel === "hourly";
+  const isStripe = paymentsMode === "stripe" && Boolean(stripePublishableKey);
+  const steps = isStripe ? [...STEPS, "Payment"] : [...STEPS];
 
   const [step, setStep] = useState(0);
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [startingPayment, setStartingPayment] = useState(false);
   const [packageId, setPackageId] = useState<string | null>(
     isPackage ? (listing.packages[0]?.id ?? null) : null,
   );
@@ -78,31 +101,72 @@ export function BookingWizard({ listing, provider }: { listing: Listing; provide
     return listing.title;
   }, [quote.selectedPackage, isHourly, listing.title, durationHours]);
 
-  const canContinue = step === 0 ? Boolean(eventDate) : step === 2 ? eventAddress.length >= 3 : true;
+  const canContinue =
+    step === 0 ? Boolean(eventDate) : step === REVIEW_STEP ? eventAddress.length >= 3 : true;
 
+  const bookingPayload = () => ({
+    listingId: listing.id,
+    packageId,
+    addonSelections,
+    eventDate,
+    startTime,
+    durationHours,
+    guestCount,
+    eventAddress,
+    eventNeighborhood,
+    notes,
+  });
+
+  async function createBooking(extra: Record<string, unknown> = {}) {
+    const res = await fetch("/api/bookings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...bookingPayload(), ...extra }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error ?? "Something went wrong");
+    router.push(`/bookings/${data.bookingId}?new=1`);
+  }
+
+  // Simulated mode: book directly.
   async function submit() {
     setSubmitting(true);
     setError(null);
     try {
-      const res = await fetch("/api/bookings", {
+      await createBooking();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Something went wrong");
+      setSubmitting(false);
+    }
+  }
+
+  // Stripe mode: create a PaymentIntent, then reveal the inline PaymentElement.
+  async function startPayment() {
+    setStartingPayment(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/payments/intent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          listingId: listing.id,
-          packageId,
-          addonSelections,
-          eventDate,
-          startTime,
-          durationHours,
-          guestCount,
-          eventAddress,
-          eventNeighborhood,
-          notes,
-        }),
+        body: JSON.stringify(bookingPayload()),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Something went wrong");
-      router.push(`/bookings/${data.bookingId}?new=1`);
+      if (!res.ok) throw new Error(data.error ?? "Couldn't start payment");
+      setClientSecret(data.clientSecret);
+      setStep(PAYMENT_STEP);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Couldn't start payment");
+    } finally {
+      setStartingPayment(false);
+    }
+  }
+
+  // Stripe mode: card confirmed client-side → persist the booking with the intent.
+  async function finalizeBooking(paymentIntentId: string) {
+    setSubmitting(true);
+    setError(null);
+    try {
+      await createBooking({ paymentIntentId });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong");
       setSubmitting(false);
@@ -123,7 +187,7 @@ export function BookingWizard({ listing, provider }: { listing: Listing; provide
 
         {/* Stepper */}
         <ol className="mb-7 flex items-center gap-2">
-          {STEPS.map((label, i) => (
+          {steps.map((label, i) => (
             <li key={label} className="flex flex-1 items-center gap-2">
               <span
                 className={cn(
@@ -143,7 +207,7 @@ export function BookingWizard({ listing, provider }: { listing: Listing; provide
               >
                 {label}
               </span>
-              {i < STEPS.length - 1 && <span className="h-px flex-1 bg-border" />}
+              {i < steps.length - 1 && <span className="h-px flex-1 bg-border" />}
             </li>
           ))}
         </ol>
@@ -327,10 +391,38 @@ export function BookingWizard({ listing, provider }: { listing: Listing; provide
           </div>
         )}
 
+        {/* Step 4: payment (Stripe) */}
+        {isStripe && step === PAYMENT_STEP && (
+          <div className="space-y-5">
+            <div className="rounded-2xl border border-border bg-secondary/40 p-5">
+              <p className="mb-3 text-sm font-semibold">Price details</p>
+              <PriceBreakdownList price={quote.price} baseLabel={baseLabel} addonLines={quote.addonLines} />
+            </div>
+            {clientSecret && stripePublishableKey && (
+              <StripePaymentStep
+                clientSecret={clientSecret}
+                publishableKey={stripePublishableKey}
+                totalCents={quote.price.totalCents}
+                onPaid={finalizeBooking}
+              />
+            )}
+            {error && (
+              <p className="rounded-xl bg-destructive/10 px-4 py-3 text-sm text-destructive">{error}</p>
+            )}
+          </div>
+        )}
+
         {/* Nav */}
         <div className="mt-8 flex items-center justify-between">
           {step > 0 ? (
-            <Button variant="ghost" onClick={() => setStep((s) => s - 1)} disabled={submitting}>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setClientSecret(null);
+                setStep((s) => s - 1);
+              }}
+              disabled={submitting}
+            >
               <ArrowLeft className="size-4" />
               Back
             </Button>
@@ -338,26 +430,48 @@ export function BookingWizard({ listing, provider }: { listing: Listing; provide
             <span />
           )}
 
-          {step < STEPS.length - 1 ? (
+          {step < REVIEW_STEP && (
             <Button variant="brand" onClick={() => setStep((s) => s + 1)} disabled={!canContinue}>
               Continue
               <ArrowRight className="size-4" />
             </Button>
-          ) : (
-            <Button variant="brand" size="lg" onClick={submit} disabled={!canContinue || submitting}>
-              {submitting ? (
-                <>
-                  <Loader2 className="size-4 animate-spin" />
-                  Booking…
-                </>
-              ) : (
-                <>
-                  {provider.instantBook ? <Zap className="size-4 fill-current" /> : null}
-                  {provider.instantBook ? "Confirm instant book" : "Send booking request"}
-                </>
-              )}
-            </Button>
           )}
+
+          {step === REVIEW_STEP &&
+            (isStripe ? (
+              <Button
+                variant="brand"
+                size="lg"
+                onClick={startPayment}
+                disabled={!canContinue || startingPayment}
+              >
+                {startingPayment ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin" />
+                    Starting…
+                  </>
+                ) : (
+                  <>
+                    Continue to payment
+                    <ArrowRight className="size-4" />
+                  </>
+                )}
+              </Button>
+            ) : (
+              <Button variant="brand" size="lg" onClick={submit} disabled={!canContinue || submitting}>
+                {submitting ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin" />
+                    Booking…
+                  </>
+                ) : (
+                  <>
+                    {provider.instantBook ? <Zap className="size-4 fill-current" /> : null}
+                    {provider.instantBook ? "Confirm instant book" : "Send booking request"}
+                  </>
+                )}
+              </Button>
+            ))}
         </div>
       </div>
 
@@ -401,7 +515,8 @@ export function BookingWizard({ listing, provider }: { listing: Listing; provide
               <PriceBreakdownList price={quote.price} baseLabel={baseLabel} addonLines={quote.addonLines} />
             </div>
             <p className="mt-3 text-center text-xs text-muted-foreground">
-              {pricingLabel(listing)} · You won&apos;t be charged (simulated)
+              {pricingLabel(listing)} ·{" "}
+              {isStripe ? "Secure checkout — test mode" : "You won't be charged (simulated)"}
             </p>
           </div>
         </div>

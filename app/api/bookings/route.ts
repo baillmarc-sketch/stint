@@ -4,9 +4,10 @@ import { createBookingSchema } from "@/lib/validations/booking";
 import { getListing } from "@/lib/queries";
 import { computeQuote } from "@/lib/booking/pricing";
 import { initialStatus } from "@/lib/booking/state-machine";
-import { getPaymentProvider } from "@/lib/payments";
+import { getPaymentProvider, retrievePaymentIntent } from "@/lib/payments";
 import { addStoredBooking, type StoredBooking } from "@/lib/bookings-store";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
+import { isStripeEnabled } from "@/lib/stripe";
 import { getOptionalUser } from "@/lib/auth";
 
 export async function POST(request: Request) {
@@ -50,10 +51,33 @@ export async function POST(request: Request) {
   const isInstant = listing.instantBook;
   const status = initialStatus(isInstant);
 
-  // Authorize via the (simulated) payment provider only when the booking is confirmed.
   let paymentStatus: StoredBooking["paymentStatus"] = "none";
   let paymentRef: string | null = null;
-  if (status === "confirmed") {
+
+  if (isStripeEnabled()) {
+    // Card was authorized client-side via the PaymentElement — verify the
+    // PaymentIntent matches the server-computed total, then attach it.
+    if (!input.paymentIntentId) {
+      return NextResponse.json({ error: "Payment is required to book." }, { status: 400 });
+    }
+    const pi = await retrievePaymentIntent(input.paymentIntentId);
+    if (pi.amount !== price.totalCents) {
+      return NextResponse.json({ error: "Payment amount mismatch." }, { status: 400 });
+    }
+    if (pi.status !== "requires_capture" && pi.status !== "succeeded") {
+      return NextResponse.json({ error: "Payment was not completed." }, { status: 400 });
+    }
+    paymentRef = pi.id;
+    paymentStatus = "authorized";
+    // Instant bookings are confirmed now, so capture the held funds immediately.
+    if (isInstant && pi.status === "requires_capture") {
+      const captured = await getPaymentProvider().capture(pi.id);
+      paymentStatus = captured.status;
+    } else if (pi.status === "succeeded") {
+      paymentStatus = "captured";
+    }
+  } else if (status === "confirmed") {
+    // Simulated: authorize server-side only when the booking is instantly confirmed.
     const result = await getPaymentProvider().authorize(price.totalCents, "pending");
     paymentStatus = result.status;
     paymentRef = result.ref;

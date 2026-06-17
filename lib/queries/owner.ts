@@ -49,3 +49,19 @@ export async function getActiveMarketId(): Promise<string | null> {
   const { data } = await db.from("markets").select("id").eq("is_active", true).limit(1).maybeSingle();
   return (data?.id as string | undefined) ?? null;
 }
+
+/** The owner's Stripe Connect status (requires the 0006_stripe migration). */
+export async function getProviderStripe(
+  providerId: string,
+): Promise<{ accountId: string | null; chargesEnabled: boolean }> {
+  const db = await createSupabaseServerClient();
+  const { data } = await db
+    .from("providers")
+    .select("stripe_account_id, stripe_charges_enabled")
+    .eq("id", providerId)
+    .maybeSingle();
+  return {
+    accountId: (data?.stripe_account_id as string | null) ?? null,
+    chargesEnabled: Boolean(data?.stripe_charges_enabled),
+  };
+}
