@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   FlatList,
   Pressable,
+  RefreshControl,
   StyleSheet,
   Text,
   View,
@@ -41,6 +42,7 @@ export default function Manage() {
   const [bookings, setBookings] = useState<BookingSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [pending, setPending] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
     if (!supabase || !session) {
@@ -56,6 +58,12 @@ export default function Manage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  async function onRefresh() {
+    setRefreshing(true);
+    await load();
+    setRefreshing(false);
+  }
 
   async function act(id: string, action: string) {
     setPending(id);
@@ -111,6 +119,7 @@ export default function Manage() {
         data={bookings}
         keyExtractor={(b) => b.id}
         contentContainerStyle={styles.list}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.text} />}
         renderItem={({ item }) => {
           const actions = ACTIONS[item.status] ?? [];
           return (

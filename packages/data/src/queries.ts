@@ -4,9 +4,9 @@
  * via the shared mappers, so web and mobile read identical shapes.
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { BookingSummary, Category, Provider } from "@stint/core";
-import { toBookingSummary, toCategory, toProvider } from "./mappers";
-import type { BookingRow, CategoryRow, ProviderRow } from "./db-types";
+import type { AvailabilitySlot, BookingSummary, Category, Provider } from "@stint/core";
+import { toAvailabilitySlot, toBookingSummary, toCategory, toProvider } from "./mappers";
+import type { AvailabilitySlotRow, BookingRow, CategoryRow, ProviderRow } from "./db-types";
 
 const LISTING_EMBED = "*, packages(*), addons(*), media(*)";
 const PROVIDER_FULL = `*, listings(${LISTING_EMBED}), reviews(*), availability_rules(*)`;
@@ -84,4 +84,42 @@ export async function fetchProviderBookings(
     .order("created_at", { ascending: false });
   if (error) throw new Error(`[data] fetchProviderBookings: ${error.message}`);
   return ((data ?? []) as unknown as BookingRow[]).map(toBookingSummary);
+}
+
+/** A provider owner's own upcoming slots (RLS: owner). */
+export async function fetchProviderSlots(
+  db: SupabaseClient,
+  providerId: string,
+): Promise<AvailabilitySlot[]> {
+  const today = new Date().toISOString().slice(0, 10);
+  const { data, error } = await db
+    .from("availability_slots")
+    .select("*")
+    .eq("provider_id", providerId)
+    .gte("slot_date", today)
+    .order("slot_date")
+    .order("start_time");
+  if (error) throw new Error(`[data] fetchProviderSlots: ${error.message}`);
+  return ((data ?? []) as AvailabilitySlotRow[]).map(toAvailabilitySlot);
+}
+
+/** Publish a bookable slot (owner-only write enforced by RLS). */
+export async function addProviderSlot(
+  db: SupabaseClient,
+  providerId: string,
+  slot: { date: string; startTime: string; endTime: string },
+): Promise<void> {
+  const { error } = await db.from("availability_slots").insert({
+    provider_id: providerId,
+    slot_date: slot.date,
+    start_time: slot.startTime,
+    end_time: slot.endTime,
+  });
+  if (error) throw new Error(`[data] addProviderSlot: ${error.message}`);
+}
+
+/** Remove an unbooked slot (owner-only write enforced by RLS). */
+export async function deleteProviderSlot(db: SupabaseClient, id: string): Promise<void> {
+  const { error } = await db.from("availability_slots").delete().eq("id", id).eq("is_booked", false);
+  if (error) throw new Error(`[data] deleteProviderSlot: ${error.message}`);
 }

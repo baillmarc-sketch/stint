@@ -86,11 +86,18 @@ export default function Account() {
             </Pressable>
           </Link>
           {isProvider && (
-            <Link href="/manage" asChild>
-              <Pressable style={[styles.btnOutline, { borderColor: c.backgroundSelected }]}>
-                <Text style={{ color: c.text, fontWeight: "700" }}>Manage bookings (provider)</Text>
-              </Pressable>
-            </Link>
+            <>
+              <Link href="/manage" asChild>
+                <Pressable style={[styles.btnOutline, { borderColor: c.backgroundSelected }]}>
+                  <Text style={{ color: c.text, fontWeight: "700" }}>Manage bookings (provider)</Text>
+                </Pressable>
+              </Link>
+              <Link href="/slots" asChild>
+                <Pressable style={[styles.btnOutline, { borderColor: c.backgroundSelected }]}>
+                  <Text style={{ color: c.text, fontWeight: "700" }}>Manage availability</Text>
+                </Pressable>
+              </Link>
+            </>
           )}
           <Pressable onPress={signOut} style={[styles.btnOutline, { borderColor: c.backgroundSelected }]}>
             <Text style={{ color: c.text, fontWeight: "700" }}>Sign out</Text>

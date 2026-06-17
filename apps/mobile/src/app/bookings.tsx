@@ -1,5 +1,13 @@
-import { useEffect, useState } from "react";
-import { ActivityIndicator, FlatList, StyleSheet, Text, View, useColorScheme } from "react-native";
+import { useCallback, useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  FlatList,
+  RefreshControl,
+  StyleSheet,
+  Text,
+  View,
+  useColorScheme,
+} from "react-native";
 import { Stack } from "expo-router";
 import { formatPrice, type BookingSummary } from "@stint/core";
 import { fetchMyBookings } from "@stint/data/queries";
@@ -27,20 +35,23 @@ export default function Bookings() {
   const { session, enabled } = useAuth();
   const [bookings, setBookings] = useState<BookingSummary[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const load = useCallback(async () => {
+    if (!supabase || !session) return;
+    const b = await fetchMyBookings(supabase).catch(() => []);
+    setBookings(b);
+  }, [session]);
 
   useEffect(() => {
-    let active = true;
-    if (!supabase || !session) {
-      setLoading(false);
-      return;
-    }
-    fetchMyBookings(supabase)
-      .then((b) => active && (setBookings(b), setLoading(false)))
-      .catch(() => active && setLoading(false));
-    return () => {
-      active = false;
-    };
-  }, [session]);
+    load().finally(() => setLoading(false));
+  }, [load]);
+
+  async function onRefresh() {
+    setRefreshing(true);
+    await load();
+    setRefreshing(false);
+  }
 
   const header = <Stack.Screen options={{ title: "My bookings" }} />;
 
@@ -76,6 +87,7 @@ export default function Bookings() {
         data={bookings}
         keyExtractor={(b) => b.id}
         contentContainerStyle={styles.list}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.text} />}
         renderItem={({ item }) => (
           <View style={[styles.card, { backgroundColor: c.backgroundElement }]}>
             <View style={styles.rowBetween}>
