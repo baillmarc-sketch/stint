@@ -1,0 +1,2 @@
+# The native app is not part of the web (Vercel) build — keep installs lean.
+apps/mobile

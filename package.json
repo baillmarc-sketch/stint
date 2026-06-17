@@ -10,6 +10,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
+    "mobile": "pnpm --filter @stint/mobile start",
+    "typecheck:mobile": "pnpm --filter @stint/mobile typecheck",
     "seed": "tsx supabase/seed/seed.ts",
     "db:push": "supabase db push",
     "db:types": "supabase gen types typescript --linked > types/database.types.ts"
