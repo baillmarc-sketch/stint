@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   Pressable,
   RefreshControl,
@@ -15,6 +16,7 @@ import { fetchMyBookings } from "@stint/data/queries";
 import { Colors } from "@/constants/theme";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth";
+import { transitionBooking } from "@/lib/api";
 
 const STATUS_LABEL: Record<string, string> = {
   requested: "Requested",
@@ -25,6 +27,8 @@ const STATUS_LABEL: Record<string, string> = {
   cancelled: "Cancelled",
   declined: "Declined",
 };
+
+const CANCELLABLE = new Set(["requested", "quoted", "confirmed", "in_progress"]);
 
 function fmtDate(d: string): string {
   return new Date(`${d}T00:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric" });
@@ -52,6 +56,24 @@ export default function Bookings() {
     setRefreshing(true);
     await load();
     setRefreshing(false);
+  }
+
+  function cancel(bookingId: string) {
+    Alert.alert("Cancel booking?", "This frees up the time slot.", [
+      { text: "Keep", style: "cancel" },
+      {
+        text: "Cancel booking",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await transitionBooking(bookingId, "cancel");
+            await load();
+          } catch {
+            // refetch reflects the true state
+          }
+        },
+      },
+    ]);
   }
 
   const header = <Stack.Screen options={{ title: "My bookings" }} />;
@@ -108,13 +130,18 @@ export default function Bookings() {
               </Text>
               <Text style={[styles.total, { color: c.text }]}>{formatPrice(item.totalCents)}</Text>
             </View>
-            <Link href={`/thread/${item.id}`} asChild>
-              <Pressable hitSlop={6}>
-                <Text style={{ color: "#7c3aed", fontWeight: "700", fontSize: 13, marginTop: 2 }}>
-                  Message
-                </Text>
-              </Pressable>
-            </Link>
+            <View style={styles.cardActions}>
+              <Link href={`/thread/${item.id}`} asChild>
+                <Pressable hitSlop={6}>
+                  <Text style={{ color: "#7c3aed", fontWeight: "700", fontSize: 13 }}>Message</Text>
+                </Pressable>
+              </Link>
+              {CANCELLABLE.has(item.status) && (
+                <Pressable hitSlop={6} onPress={() => cancel(item.id)}>
+                  <Text style={{ color: "#dc2626", fontWeight: "700", fontSize: 13 }}>Cancel</Text>
+                </Pressable>
+              )}
+            </View>
           </View>
         )}
       />
@@ -133,4 +160,5 @@ const styles = StyleSheet.create({
   sub: { fontSize: 14 },
   meta: { fontSize: 12, flexShrink: 1 },
   total: { fontSize: 15, fontWeight: "700" },
+  cardActions: { flexDirection: "row", gap: 18, marginTop: 4 },
 });

@@ -26,6 +26,8 @@ type Seed = {
   basePriceCents: number;
   unitLabel: string;
   includes: string[];
+  packages?: { name: string; priceCents: number; description: string }[];
+  addons?: { name: string; priceCents: number; description: string; perGuest?: boolean }[];
 };
 
 function build(s: Seed): Provider {
@@ -68,8 +70,20 @@ function build(s: Seed): Provider {
         travelRadiusMiles: 30,
         travelFeeCents: 3000,
         instantBook: s.instant,
-        packages: [],
-        addons: [],
+        packages: (s.packages ?? []).map((p, i) => ({
+          id: `${s.id}-pkg-${i}`,
+          name: p.name,
+          description: p.description,
+          priceCents: p.priceCents,
+          includes: [],
+        })),
+        addons: (s.addons ?? []).map((a, i) => ({
+          id: `${s.id}-add-${i}`,
+          name: a.name,
+          description: a.description,
+          priceCents: a.priceCents,
+          pricePerGuest: Boolean(a.perGuest),
+        })),
         gallery: [],
         includes: s.includes,
       },
@@ -97,6 +111,16 @@ export const sampleProviders: Provider[] = [
     basePriceCents: 65000,
     unitLabel: "per event",
     includes: ["Chef + portable grill", "Fried rice & vegetables", "Signature sauces", "Setup and cleanup"],
+    packages: [
+      { name: "Classic", priceCents: 65000, description: "Two proteins per guest" },
+      { name: "Premium", priceCents: 89000, description: "Three proteins incl. shrimp" },
+      { name: "Deluxe", priceCents: 125000, description: "Filet & lobster upgrade" },
+    ],
+    addons: [
+      { name: "Extra protein", priceCents: 1200, description: "Per guest", perGuest: true },
+      { name: "Sake service", priceCents: 9000, description: "Premium sake for the table" },
+      { name: "Gyoza appetizer", priceCents: 4500, description: "Two dozen dumplings" },
+    ],
   }),
   build({
     id: "the-velvet-pour-bar-co",

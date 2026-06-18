@@ -42,6 +42,8 @@ export default function BookScreen() {
   const [loading, setLoading] = useState(true);
   const [slotId, setSlotId] = useState<string | null>(null);
   const [guestCount, setGuestCount] = useState(12);
+  const [packageId, setPackageId] = useState<string | null>(null);
+  const [addonQty, setAddonQty] = useState<Record<string, number>>({});
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
@@ -51,6 +53,7 @@ export default function BookScreen() {
       if (!active) return;
       const first = p?.listings[0];
       if (first) setGuestCount(Math.min(Math.max(first.minGuests, 12), first.maxGuests));
+      if (first?.pricingModel === "package" && first.packages[0]) setPackageId(first.packages[0].id);
       setProvider(p);
       setLoading(false);
     });
@@ -65,10 +68,19 @@ export default function BookScreen() {
     .filter((s) => !s.isBooked && s.date >= today)
     .slice(0, 12);
 
-  const quote = useMemo(
-    () => (listing ? computeQuote({ listing, durationHours: listing.minHours ?? 3, guestCount }) : null),
-    [listing, guestCount],
-  );
+  const quote = useMemo(() => {
+    if (!listing) return null;
+    const addonSelections = Object.entries(addonQty)
+      .filter(([, q]) => q > 0)
+      .map(([addonId, quantity]) => ({ addonId, quantity }));
+    return computeQuote({
+      listing,
+      packageId,
+      addonSelections,
+      durationHours: listing.minHours ?? 3,
+      guestCount,
+    });
+  }, [listing, packageId, addonQty, guestCount]);
 
   if (loading) {
     return (
@@ -94,10 +106,13 @@ export default function BookScreen() {
 
   function bookingInput() {
     const slot = openSlots.find((s) => s.id === slotId);
+    const addonSelections = Object.entries(addonQty)
+      .filter(([, q]) => q > 0)
+      .map(([addonId, quantity]) => ({ addonId, quantity }));
     return {
       listingId,
-      packageId: null,
-      addonSelections: [],
+      packageId,
+      addonSelections,
       eventDate: slot?.date ?? today,
       startTime: slot?.startTime ?? "18:00",
       durationHours,
@@ -146,6 +161,38 @@ export default function BookScreen() {
         <Text style={[styles.h1, { color: c.text }]}>{provider.businessName}</Text>
         <Text style={[styles.sub, { color: c.textSecondary }]}>{listing.title}</Text>
 
+        {listing.packages.length > 0 && (
+          <>
+            <Text style={[styles.label, { color: c.text }]}>Package</Text>
+            <View style={{ gap: 8 }}>
+              {listing.packages.map((pkg) => {
+                const selected = packageId === pkg.id;
+                return (
+                  <Pressable
+                    key={pkg.id}
+                    onPress={() => setPackageId(pkg.id)}
+                    style={[
+                      styles.pkg,
+                      {
+                        borderColor: selected ? "#7c3aed" : c.backgroundSelected,
+                        backgroundColor: selected ? "rgba(124,58,237,0.12)" : c.backgroundElement,
+                      },
+                    ]}
+                  >
+                    <View style={styles.rowBetween}>
+                      <Text style={{ color: c.text, fontWeight: "700" }}>{pkg.name}</Text>
+                      <Text style={{ color: c.text, fontWeight: "700" }}>{formatPrice(pkg.priceCents)}</Text>
+                    </View>
+                    {pkg.description ? (
+                      <Text style={{ color: c.textSecondary, fontSize: 12, marginTop: 2 }}>{pkg.description}</Text>
+                    ) : null}
+                  </Pressable>
+                );
+              })}
+            </View>
+          </>
+        )}
+
         {openSlots.length > 0 && (
           <>
             <Text style={[styles.label, { color: c.text }]}>Choose a time</Text>
@@ -190,8 +237,46 @@ export default function BookScreen() {
           </Pressable>
         </View>
 
+        {listing.addons.length > 0 && (
+          <>
+            <Text style={[styles.label, { color: c.text }]}>Add-ons</Text>
+            <View style={{ gap: 8 }}>
+              {listing.addons.map((addon) => {
+                const on = (addonQty[addon.id] ?? 0) > 0;
+                return (
+                  <Pressable
+                    key={addon.id}
+                    onPress={() => setAddonQty((q) => ({ ...q, [addon.id]: on ? 0 : 1 }))}
+                    style={[
+                      styles.addon,
+                      {
+                        borderColor: on ? "#7c3aed" : c.backgroundSelected,
+                        backgroundColor: on ? "rgba(124,58,237,0.12)" : c.backgroundElement,
+                      },
+                    ]}
+                  >
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ color: c.text, fontWeight: "600" }}>{addon.name}</Text>
+                      <Text style={{ color: c.textSecondary, fontSize: 12 }}>
+                        +{formatPrice(addon.priceCents)}
+                        {addon.pricePerGuest ? " / guest" : ""}
+                      </Text>
+                    </View>
+                    <Text style={{ color: on ? "#7c3aed" : c.textSecondary, fontWeight: "700" }}>
+                      {on ? "Added" : "Add"}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </>
+        )}
+
         <View style={[styles.priceCard, { backgroundColor: c.backgroundElement }]}>
           <PriceRow label="Base" value={formatPrice(quote.price.baseCents)} c={c} />
+          {quote.price.addonsCents > 0 && (
+            <PriceRow label="Add-ons" value={formatPrice(quote.price.addonsCents)} c={c} />
+          )}
           {quote.price.travelFeeCents > 0 && (
             <PriceRow label="Travel" value={formatPrice(quote.price.travelFeeCents)} c={c} />
           )}
@@ -261,4 +346,7 @@ const styles = StyleSheet.create({
   cta: { marginTop: 18, backgroundColor: "#7c3aed", borderRadius: 14, paddingVertical: 16, alignItems: "center" },
   ctaText: { color: "#fff", fontWeight: "800", fontSize: 16 },
   note: { fontSize: 13, lineHeight: 19, marginTop: 14 },
+  rowBetween: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
+  pkg: { borderWidth: 1, borderRadius: 14, padding: 14 },
+  addon: { flexDirection: "row", alignItems: "center", gap: 10, borderWidth: 1, borderRadius: 14, padding: 14 },
 });
