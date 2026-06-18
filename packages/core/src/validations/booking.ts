@@ -16,6 +16,10 @@ export const createBookingSchema = z.object({
   eventAddress: z.string().min(3, "Enter the event address"),
   eventNeighborhood: z.string().default(""),
   notes: z.string().max(1000).default(""),
+  /** Set in Stripe mode — the client-confirmed PaymentIntent to attach. */
+  paymentIntentId: z.string().optional(),
+  /** Bookable availability slot being reserved (auto-book). */
+  slotId: z.string().optional(),
 });
 
 export type CreateBookingInput = z.infer<typeof createBookingSchema>;

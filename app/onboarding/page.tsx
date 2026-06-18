@@ -1,25 +1,12 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { ArrowRight, CalendarHeart, Store } from "lucide-react";
+import { becomeProvider } from "./actions";
 
 export const metadata: Metadata = { title: "Get started" };
 
-const ROLES = [
-  {
-    icon: CalendarHeart,
-    title: "I'm planning an event",
-    body: "Browse and book chefs, performers, bartenders, and crews for your party.",
-    href: "/browse",
-    cta: "Start browsing",
-  },
-  {
-    icon: Store,
-    title: "I'm a provider",
-    body: "List your service, set pricing and availability, and start getting booked.",
-    href: "/dashboard",
-    cta: "Set up my storefront",
-  },
-];
+const CARD_CLASS =
+  "group flex flex-col rounded-3xl border border-border bg-card p-7 text-left transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5";
 
 export default function OnboardingPage() {
   return (
@@ -34,23 +21,35 @@ export default function OnboardingPage() {
       </div>
 
       <div className="mt-10 grid gap-4 sm:grid-cols-2">
-        {ROLES.map((role) => (
-          <Link
-            key={role.title}
-            href={role.href}
-            className="group flex flex-col rounded-3xl border border-border bg-card p-7 transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5"
-          >
+        <Link href="/browse" className={CARD_CLASS}>
+          <span className="inline-grid size-12 place-items-center rounded-2xl bg-brand-gradient text-white">
+            <CalendarHeart className="size-6" />
+          </span>
+          <h2 className="mt-5 font-display text-xl font-bold">I&apos;m planning an event</h2>
+          <p className="mt-2 flex-1 text-sm text-muted-foreground">
+            Browse and book chefs, performers, bartenders, and crews for your party.
+          </p>
+          <span className="mt-5 inline-flex items-center gap-1 text-sm font-semibold text-primary">
+            Start browsing
+            <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
+          </span>
+        </Link>
+
+        <form action={becomeProvider} className="contents">
+          <button type="submit" className={CARD_CLASS}>
             <span className="inline-grid size-12 place-items-center rounded-2xl bg-brand-gradient text-white">
-              <role.icon className="size-6" />
+              <Store className="size-6" />
             </span>
-            <h2 className="mt-5 font-display text-xl font-bold">{role.title}</h2>
-            <p className="mt-2 flex-1 text-sm text-muted-foreground">{role.body}</p>
+            <h2 className="mt-5 font-display text-xl font-bold">I&apos;m a provider</h2>
+            <p className="mt-2 flex-1 text-sm text-muted-foreground">
+              List your service, set pricing and availability, and start getting booked.
+            </p>
             <span className="mt-5 inline-flex items-center gap-1 text-sm font-semibold text-primary">
-              {role.cta}
+              Set up my storefront
               <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
             </span>
-          </Link>
-        ))}
+          </button>
+        </form>
       </div>
     </div>
   );

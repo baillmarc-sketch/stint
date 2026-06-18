@@ -51,6 +51,10 @@ export default async function ProviderPage({ params }: { params: Promise<Params>
   const category = await getCategoryById(provider.categoryId);
   const gallery = listing.gallery;
   const weekdays = provider.availability.map((a) => weekdayLabel(a.weekday));
+  const slotToday = new Date().toISOString().slice(0, 10);
+  const openSlots = (provider.slots ?? [])
+    .filter((s) => !s.isBooked && s.date >= slotToday)
+    .slice(0, 8);
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
@@ -228,9 +232,28 @@ export default async function ProviderPage({ params }: { params: Promise<Params>
           <Section title="Availability">
             <p className="text-sm text-muted-foreground">
               Typically available:{" "}
-              <span className="font-medium text-foreground">{weekdays.join(", ")}</span>. Pick your
-              exact date and time during booking.
+              <span className="font-medium text-foreground">{weekdays.join(", ")}</span>.
             </p>
+            {openSlots.length > 0 && (
+              <div className="mt-4">
+                <p className="mb-2 text-sm font-semibold">Next openings — book instantly</p>
+                <div className="flex flex-wrap gap-2">
+                  {openSlots.map((s) => (
+                    <span
+                      key={s.id}
+                      className="rounded-full border border-border bg-card px-3 py-1.5 text-sm"
+                    >
+                      {new Date(`${s.date}T00:00:00`).toLocaleDateString("en-US", {
+                        weekday: "short",
+                        month: "short",
+                        day: "numeric",
+                      })}{" "}
+                      · {s.startTime}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
           </Section>
 
           {/* Reviews */}

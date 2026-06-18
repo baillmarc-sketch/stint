@@ -1,5 +1,5 @@
 /** Booking lifecycle — allowed transitions and the initial-status rule. */
-import type { BookingStatus } from "@/types/domain";
+import type { BookingStatus } from "../types/domain";
 
 export const TRANSITIONS: Record<BookingStatus, BookingStatus[]> = {
   requested: ["quoted", "confirmed", "declined", "cancelled"],

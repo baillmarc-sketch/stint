@@ -45,7 +45,25 @@ pnpm seed     # inserts markets, categories, providers, listings, reviews
    - `PAYMENTS_PROVIDER` = `simulated`
 3. Deploy. Your shareable demo URL is the Vercel production domain.
 
+## 6. Real payments (Stripe Connect, test mode) — optional
+Payments stay **simulated** until you opt in. To take real test-mode card payments:
+1. In Stripe (test mode): **Connect → enable Express**, then grab **Developers → API keys**.
+2. Apply the Stripe migration: `pnpm db:push` (adds `providers.stripe_account_id`).
+3. Set env (locally and/or in Vercel):
+   - `PAYMENTS_PROVIDER=stripe`
+   - `STRIPE_SECRET_KEY=sk_test_…`
+   - `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_…`
+   - `STRIPE_WEBHOOK_SECRET=whsec_…`
+4. Webhook → `/.../api/webhooks/stripe`, events `payment_intent.*` + `account.updated`.
+   Locally: `stripe listen --forward-to localhost:3000/api/webhooks/stripe`.
+5. As a provider, open **Dashboard → Payouts → Connect with Stripe** and finish Express
+   onboarding. Then book that provider and pay with test card `4242 4242 4242 4242`.
+
+How it works: the inline **PaymentElement** authorizes a Connect **destination charge**
+(`application_fee_amount` = our service fee). Instant-book captures immediately;
+request-to-book holds the authorization and captures when the provider accepts. Webhooks
+reconcile `payment_status`. See `lib/payments.ts`, `app/api/payments/intent`, and
+`app/api/webhooks/stripe`.
+
 ## Notes
-- Payments stay **simulated** until you set `PAYMENTS_PROVIDER=stripe` and add a
-  `StripeConnectProvider` (the boundary already exists in `lib/payments.ts`).
 - Generate DB types anytime with `pnpm db:types` (writes `types/database.types.ts`).

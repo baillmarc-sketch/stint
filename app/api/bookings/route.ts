@@ -1,11 +1,16 @@
 import { NextResponse } from "next/server";
 import { nanoid } from "nanoid";
-import { createBookingSchema } from "@/lib/validations/booking";
+import { createBookingSchema } from "@stint/core/validations/booking";
 import { getListing } from "@/lib/queries";
-import { computeQuote } from "@/lib/booking/pricing";
-import { initialStatus } from "@/lib/booking/state-machine";
-import { getPaymentProvider } from "@/lib/payments";
+import { computeQuote } from "@stint/core/booking/pricing";
+import { initialStatus } from "@stint/core/booking/state-machine";
+import { getPaymentProvider, retrievePaymentIntent } from "@/lib/payments";
 import { addStoredBooking, type StoredBooking } from "@/lib/bookings-store";
+import { isSupabaseConfigured } from "@/lib/supabase/config";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { notifyUser } from "@/lib/push";
+import { isStripeEnabled } from "@/lib/stripe";
+import { getOptionalUser } from "@/lib/auth";
 
 export async function POST(request: Request) {
   let body: unknown;
@@ -13,6 +18,12 @@ export async function POST(request: Request) {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
+
+  // With a live database, bookings are tied to the signed-in customer (RLS).
+  // The zero-config demo books anonymously into a cookie.
+  if (isSupabaseConfigured() && !(await getOptionalUser())) {
+    return NextResponse.json({ error: "Please sign in to book." }, { status: 401 });
   }
 
   const parsed = createBookingSchema.safeParse(body);
@@ -30,6 +41,20 @@ export async function POST(request: Request) {
   }
   const { listing, provider } = found;
 
+  // Auto-book: ensure the chosen slot is still open (DB mode only; the admin
+  // client bypasses the owner-only RLS write on slots).
+  if (input.slotId && isSupabaseConfigured()) {
+    const admin = createSupabaseAdminClient();
+    const { data: slot } = await admin
+      .from("availability_slots")
+      .select("id, is_booked, provider_id")
+      .eq("id", input.slotId)
+      .maybeSingle();
+    if (!slot || slot.is_booked || slot.provider_id !== provider.id) {
+      return NextResponse.json({ error: "That time is no longer available." }, { status: 409 });
+    }
+  }
+
   // Re-run pricing server-side so a tampered client payload can't change the total.
   const { price, addonLines } = computeQuote({
     listing,
@@ -42,10 +67,33 @@ export async function POST(request: Request) {
   const isInstant = listing.instantBook;
   const status = initialStatus(isInstant);
 
-  // Authorize via the (simulated) payment provider only when the booking is confirmed.
   let paymentStatus: StoredBooking["paymentStatus"] = "none";
   let paymentRef: string | null = null;
-  if (status === "confirmed") {
+
+  if (isStripeEnabled()) {
+    // Card was authorized client-side via the PaymentElement — verify the
+    // PaymentIntent matches the server-computed total, then attach it.
+    if (!input.paymentIntentId) {
+      return NextResponse.json({ error: "Payment is required to book." }, { status: 400 });
+    }
+    const pi = await retrievePaymentIntent(input.paymentIntentId);
+    if (pi.amount !== price.totalCents) {
+      return NextResponse.json({ error: "Payment amount mismatch." }, { status: 400 });
+    }
+    if (pi.status !== "requires_capture" && pi.status !== "succeeded") {
+      return NextResponse.json({ error: "Payment was not completed." }, { status: 400 });
+    }
+    paymentRef = pi.id;
+    paymentStatus = "authorized";
+    // Instant bookings are confirmed now, so capture the held funds immediately.
+    if (isInstant && pi.status === "requires_capture") {
+      const captured = await getPaymentProvider().capture(pi.id);
+      paymentStatus = captured.status;
+    } else if (pi.status === "succeeded") {
+      paymentStatus = "captured";
+    }
+  } else if (status === "confirmed") {
+    // Simulated: authorize server-side only when the booking is instantly confirmed.
     const result = await getPaymentProvider().authorize(price.totalCents, "pending");
     paymentStatus = result.status;
     paymentRef = result.ref;
@@ -76,7 +124,32 @@ export async function POST(request: Request) {
     createdAt: new Date().toISOString(),
   };
 
-  await addStoredBooking(booking);
+  const stored = await addStoredBooking(booking);
 
-  return NextResponse.json({ bookingId: booking.id, status });
+  // Reserve the slot so it can't be double-booked (auto-book).
+  if (input.slotId && isSupabaseConfigured()) {
+    await createSupabaseAdminClient()
+      .from("availability_slots")
+      .update({ is_booked: true, booking_id: stored.id })
+      .eq("id", input.slotId)
+      .eq("is_booked", false);
+  }
+
+  // Notify the provider's owner of the new booking (best-effort push).
+  if (isSupabaseConfigured()) {
+    const { data: prov } = await createSupabaseAdminClient()
+      .from("providers")
+      .select("owner_id")
+      .eq("id", provider.id)
+      .maybeSingle();
+    if (prov?.owner_id) {
+      await notifyUser(
+        prov.owner_id as string,
+        "New booking 🎉",
+        `${listing.title} · ${input.guestCount} guests on ${input.eventDate}`,
+      );
+    }
+  }
+
+  return NextResponse.json({ bookingId: stored.id, status });
 }

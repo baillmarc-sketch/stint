@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Compile the shared TypeScript workspace package (no prebuilt dist).
+  transpilePackages: ["@stint/core", "@stint/data"],
   images: {
     // Demo imagery is hotlinked from deterministic sources. Optimization is
     // disabled so the optimizer never has to fetch/transcode dozens of remote

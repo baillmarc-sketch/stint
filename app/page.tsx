@@ -33,6 +33,11 @@ export default async function HomePage() {
     getNeighborhoods(),
   ]);
 
+  const testimonials = featured
+    .filter((p) => p.reviews.length > 0)
+    .slice(0, 3)
+    .map((p) => ({ review: p.reviews[0], business: p.businessName }));
+
   return (
     <div>
       {/* Hero */}
@@ -95,6 +100,22 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {/* Press / social proof */}
+      <section className="border-y border-border bg-secondary/30">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-x-10 gap-y-3 px-4 py-6 sm:px-6 lg:px-8">
+          <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            As seen in
+          </span>
+          {["TimeOut New York", "Eater NY", "Brooklyn Magazine", "The Knot", "Gothamist"].map(
+            (name) => (
+              <span key={name} className="font-display text-base font-bold text-muted-foreground/60">
+                {name}
+              </span>
+            ),
+          )}
+        </div>
+      </section>
+
       {/* Categories */}
       <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
         <SectionHeading
@@ -122,6 +143,34 @@ export default async function HomePage() {
           ))}
         </div>
       </section>
+
+      {/* Testimonials */}
+      {testimonials.length > 0 && (
+        <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+          <SectionHeading eyebrow="Loved by hosts" title="What NYC is saying" />
+          <div className="mt-6 grid gap-5 md:grid-cols-3">
+            {testimonials.map(({ review, business }) => (
+              <figure key={review.id} className="flex flex-col rounded-2xl border border-border bg-card p-6">
+                <div className="flex gap-0.5 text-warning">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Star
+                      key={i}
+                      className={cn("size-4", i < Math.round(review.rating) ? "fill-current" : "text-secondary")}
+                    />
+                  ))}
+                </div>
+                <blockquote className="mt-3 flex-1 text-sm text-foreground/90">
+                  &ldquo;{review.body}&rdquo;
+                </blockquote>
+                <figcaption className="mt-4 text-sm">
+                  <span className="font-semibold">{review.authorName}</span>
+                  <span className="text-muted-foreground"> · {review.eventType} · {business}</span>
+                </figcaption>
+              </figure>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* How it works */}
       <section id="how-it-works" className="mx-auto max-w-7xl scroll-mt-20 px-4 py-16 sm:px-6 lg:px-8">
@@ -241,6 +290,36 @@ export default async function HomePage() {
               </div>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* City expansion teaser */}
+      <section className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+        <div className="rounded-3xl border border-border bg-card p-8 text-center sm:p-10">
+          <Badge variant="brand" className="mb-4">
+            <MapPin className="size-3.5" />
+            Expanding city by city
+          </Badge>
+          <h2 className="font-display text-2xl font-extrabold tracking-tight sm:text-3xl">
+            Live in NYC. Coming to your city next.
+          </h2>
+          <p className="mx-auto mt-3 max-w-md text-muted-foreground">
+            We launch neighborhood by neighborhood to keep supply deep and quality high. New York
+            is open now — more metros are on the way.
+          </p>
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
+            <span className="rounded-full bg-success/12 px-3.5 py-1.5 text-sm font-semibold text-success">
+              New York City · Live
+            </span>
+            {["Los Angeles", "Miami", "Chicago", "Austin"].map((c) => (
+              <span
+                key={c}
+                className="rounded-full border border-border px-3.5 py-1.5 text-sm font-medium text-muted-foreground"
+              >
+                {c} · Soon
+              </span>
+            ))}
+          </div>
         </div>
       </section>
 

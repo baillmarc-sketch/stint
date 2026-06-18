@@ -1,5 +1,5 @@
 import { Badge } from "@/components/ui/badge";
-import { STATUS_META } from "@/lib/booking/state-machine";
+import { STATUS_META } from "@stint/core/booking/state-machine";
 import type { BookingStatus } from "@/types/domain";
 
 const TONE_TO_VARIANT = {
