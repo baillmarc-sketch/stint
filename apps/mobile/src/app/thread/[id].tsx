@@ -12,7 +12,7 @@ import {
   useColorScheme,
 } from "react-native";
 import { Stack, useLocalSearchParams } from "expo-router";
-import { fetchBookingMessages, type ThreadMessage } from "@stint/data/queries";
+import { fetchBookingThread, type ThreadMessage } from "@stint/data/queries";
 import { Colors } from "@/constants/theme";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth";
@@ -26,19 +26,42 @@ export default function Thread() {
   const myId = session?.user.id ?? null;
 
   const [messages, setMessages] = useState<ThreadMessage[]>([]);
+  const [threadId, setThreadId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
 
   const load = useCallback(async () => {
     if (!supabase || !session) return;
-    const m = await fetchBookingMessages(supabase, id).catch(() => []);
-    setMessages(m);
+    const t = await fetchBookingThread(supabase, id).catch(() => ({
+      threadId: null,
+      messages: [] as ThreadMessage[],
+    }));
+    setThreadId(t.threadId);
+    setMessages(t.messages);
   }, [id, session]);
 
   useEffect(() => {
     load().finally(() => setLoading(false));
   }, [load]);
+
+  // Live updates via Supabase Realtime once the thread exists.
+  useEffect(() => {
+    if (!supabase || !threadId) return;
+    const channel = supabase
+      .channel(`thread:${threadId}`)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "messages", filter: `thread_id=eq.${threadId}` },
+        () => {
+          load();
+        },
+      )
+      .subscribe();
+    return () => {
+      supabase?.removeChannel(channel);
+    };
+  }, [threadId, load]);
 
   async function send() {
     const body = text.trim();

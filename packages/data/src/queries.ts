@@ -138,27 +138,37 @@ export interface ThreadMessage {
   createdAt: string;
 }
 
-/** Messages on a booking's thread (RLS scopes to participants; empty if no thread yet). */
-export async function fetchBookingMessages(
+export interface BookingThread {
+  threadId: string | null;
+  messages: ThreadMessage[];
+}
+
+/** A booking's thread id + messages (RLS scopes to participants; null thread if none yet). */
+export async function fetchBookingThread(
   db: SupabaseClient,
   bookingId: string,
-): Promise<ThreadMessage[]> {
+): Promise<BookingThread> {
   const { data: thread } = await db
     .from("message_threads")
     .select("id")
     .eq("booking_id", bookingId)
     .maybeSingle();
-  if (!thread) return [];
+  const threadId = thread ? (thread as { id: string }).id : null;
+  if (!threadId) return { threadId: null, messages: [] };
+
   const { data } = await db
     .from("messages")
     .select("*")
-    .eq("thread_id", (thread as { id: string }).id)
+    .eq("thread_id", threadId)
     .order("created_at", { ascending: true });
-  return ((data ?? []) as MessageRow[]).map((m) => ({
-    id: m.id,
-    senderId: m.sender_id,
-    kind: m.kind,
-    body: m.body,
-    createdAt: m.created_at,
-  }));
+  return {
+    threadId,
+    messages: ((data ?? []) as MessageRow[]).map((m) => ({
+      id: m.id,
+      senderId: m.sender_id,
+      kind: m.kind,
+      body: m.body,
+      createdAt: m.created_at,
+    })),
+  };
 }
